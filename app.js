@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURAÇÃO DO FIREBASE (JÁ INSERIDO AS SUAS CHAVES)
+// 1. CONFIGURAÇÃO DO FIREBASE
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyAQfU4m4UAKmsq4QNdW__KPIIjNUT_HoI0",
@@ -10,41 +10,37 @@ const firebaseConfig = {
     appId: "1:767894844971:web:6800eafcf14f3b93dcdc6e"
 };
 
-// Inicializa o Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ==========================================
-// 2. VARIÁVEIS GLOBAIS E ESTADOS
+// 2. VARIÁVEIS GLOBAIS
 // ==========================================
 let currentUserUID = null;
 let userXP = 0;
 let habitos = [];
 let filtroAtual = 'todos';
 let meuGrafico;
-let temaSalvo = localStorage.getItem('temaSkyOS') || '#00ff88'; // Lumeon Green
+let temaSalvo = localStorage.getItem('temaSkyOS') || '#00ff88'; 
 document.documentElement.style.setProperty('--accent', temaSalvo);
 
 // ==========================================
-// 3. SISTEMA DE AUTENTICAÇÃO (LOGIN)
+// 3. LOGIN / LOGOUT
 // ==========================================
 document.getElementById('btn-login').addEventListener('click', () => {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch(error => alert("Erro ao logar: " + error.message));
 });
 
-document.getElementById('btn-logout').addEventListener('click', () => {
-    auth.signOut();
-});
+document.getElementById('btn-logout').addEventListener('click', () => { auth.signOut(); });
 
-// Fica escutando para ver se logou ou deslogou
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUserUID = user.uid;
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-main').style.display = 'flex';
-        carregarDadosDaNuvem(); // Puxa tudo do banco de dados!
+        carregarDadosDaNuvem(); 
     } else {
         currentUserUID = null;
         document.getElementById('login-screen').style.display = 'flex';
@@ -53,13 +49,12 @@ auth.onAuthStateChanged(user => {
 });
 
 // ==========================================
-// 4. BANCO DE DADOS (FIRESTORE)
+// 4. FIREBASE (SALVAR/CARREGAR)
 // ==========================================
 function carregarDadosDaNuvem() {
     if (!currentUserUID) return;
     const docRef = db.collection("usuarios").doc(currentUserUID);
 
-    // Ouve as alterações na nuvem em tempo real!
     docRef.onSnapshot((doc) => {
         if (doc.exists) {
             const dados = doc.data();
@@ -70,7 +65,6 @@ function carregarDadosDaNuvem() {
             atualizarHabitosVisuais();
             atualizarXPVisual();
         } else {
-            // Se for a primeira vez, cria um perfil em branco
             salvarNaNuvem();
         }
     });
@@ -78,54 +72,55 @@ function carregarDadosDaNuvem() {
 
 function salvarNaNuvem() {
     if (!currentUserUID) return;
-    const notas = document.getElementById('quick-notes').value;
-    db.collection("usuarios").doc(currentUserUID).set({
-        habitos: habitos,
-        userXP: userXP,
-        notas: notas
-    }, { merge: true });
+    const notesArea = document.getElementById('quick-notes');
+    const notas = notesArea ? notesArea.value : "";
+    db.collection("usuarios").doc(currentUserUID).set({ habitos, userXP, notas }, { merge: true });
 }
 
-// Salva as notas na nuvem quando terminar de escrever
 const notesArea = document.getElementById('quick-notes');
 if (notesArea) notesArea.addEventListener('change', salvarNaNuvem);
 
 // ==========================================
-// 5. NOVA LÓGICA DE IMAGEM (PROVA DE CONCLUSÃO - SUA PEDRA NO SAPATO)
+// 5. O SISTEMA DE FOTO (CORRIGIDO ANTI-BUG)
 // ==========================================
-let indexTarefaPendenteProva = null; // Guarda qual a tarefa que estamos concluindo
+let indexTarefaPendenteProva = null; 
 
-window.toggleHabito = (i) => {
-    // Se a tarefa não está feita e vai marcar como feita, pede a prova!
+// A Tática anti-travamento: usamos onclick com preventDefault ao invés de onchange
+window.iniciarProva = (i, event) => {
+    event.preventDefault(); // Impede a caixinha de marcar sozinha e desincronizar o site!
+
     if (!habitos[i].feito) {
         indexTarefaPendenteProva = i;
-        document.getElementById('upload-prova').click(); // Abre a janela de arquivos
+        document.getElementById('upload-prova').click(); 
     } else {
-        // Se vai desmarcar, apenas retira o check e a imagem
+        // Se já estava feito e quer desmarcar
         habitos[i].feito = false;
-        habitos[i].imagem = null; // Apaga a prova
+        habitos[i].imagem = null; 
         gerenciarXP(-150);
-        salvarNaNuvem();
+        atualizarHabitosVisuais(); // Atualiza a tela primeiro
+        salvarNaNuvem(); // Depois manda pra nuvem
     }
 };
 
-// Quando escolher a imagem de prova de conclusão
 document.getElementById('upload-prova').addEventListener('change', function (e) {
     const file = e.target.files[0];
     if (file && indexTarefaPendenteProva !== null) {
         const reader = new FileReader();
         reader.onload = function (evento) {
             habitos[indexTarefaPendenteProva].feito = true;
-            habitos[indexTarefaPendenteProva].imagem = evento.target.result; // Salva a foto (Base64 pequeno)
-            gerenciarXP(150); // XP por prova enviada!
+            habitos[indexTarefaPendenteProva].imagem = evento.target.result; 
+            gerenciarXP(150); 
+            atualizarHabitosVisuais(); // Força a atualização da caixinha
             salvarNaNuvem();
             indexTarefaPendenteProva = null;
-            e.target.value = ''; // Limpa o input pra poder enviar a mesma foto se quiser
-            
-            // Dispara os confetes com as cores do tema ao enviar a prova!
+            e.target.value = ''; 
             dispararConfetes();
         };
-        reader.readAsDataURL(file); // Lê a foto e dispara a função acima
+        reader.readAsDataURL(file); 
+    } else {
+        // Se o usuário cancelar a foto
+        indexTarefaPendenteProva = null;
+        e.target.value = '';
     }
 });
 
@@ -140,7 +135,7 @@ function dispararConfetes() {
 }
 
 // ==========================================
-// 6. RENDERIZAÇÃO DO SISTEMA VISUAL PRO
+// 6. RENDERIZAÇÃO E UX
 // ==========================================
 function obterClasseCategoria(categoria) {
     if (categoria === 'Saúde') return 'tag-saude';
@@ -160,14 +155,13 @@ function atualizarHabitosVisuais() {
         if (h.feito) concluidos++;
 
         const div = document.createElement('div');
-        // Adiciona classe para cor da tag baseada na ref de progresso
         div.className = `habito glass-panel slide-up ${obterClasseCategoria(h.categoria)}`;
         
-        // Foto da prova aparece pequena no cartão
-        let imgHtml = h.imagem ? `<img src="${h.imagem}" class="habito-img hover-lift" title="Clique para ver a prova ampliada">` : '<div class="habito-img-placeholder text-dim">Sem prova</div>';
+        let imgHtml = h.imagem ? `<img src="${h.imagem}" class="habito-img hover-lift" title="Prova de conclusão">` : '<div class="habito-img-placeholder text-dim">Sem prova</div>';
         
+        // A mágica anti-bug está no onclick="iniciarProva(${i}, event)"
         div.innerHTML = `
-            <input type="checkbox" ${h.feito ? 'checked' : ''} onchange="toggleHabito(${i})">
+            <input type="checkbox" ${h.feito ? 'checked' : ''} onclick="iniciarProva(${i}, event)">
             <div class="habito-texto-container">
                 <p class="${h.feito ? 'feito' : ''}">${h.texto}</p>
                 <span class="cat-tag">${h.categoria}</span>
@@ -175,25 +169,21 @@ function atualizarHabitosVisuais() {
             <div class="habito-img-container">
                 ${imgHtml}
             </div>
-            <button onclick="removerHabito(${i})" class="btn-remove-habito" title="Excluir Missão">✖</button>
+            <button onclick="removerHabito(${i})" class="btn-remove-habito">✖</button>
         `;
         lista.appendChild(div);
     });
 
-    // Atualiza Dopamina e Performance
     const total = habitos.length;
     const porc = total ? Math.round((concluidos / total) * 100) : 0;
     
     document.getElementById('txt-porc').innerText = porc + "%";
     const sequenciaTxt = document.getElementById('txt-sequencia');
-    if(sequenciaTxt) sequenciaTxt.innerText = concluidos > 0 ? habitos.filter(h=>h.feito).length : 0; // Streak simplificado pra teste
-
-    localStorage.setItem('habitosV7', JSON.stringify(habitos)); // Backup local por garantia
+    if(sequenciaTxt) sequenciaTxt.innerText = concluidos > 0 ? habitos.filter(h=>h.feito).length : 0; 
     
-    // Atualiza o gráfico Dinâmico sem recriar
     if (meuGrafico) {
         meuGrafico.data.datasets[0].data[6] = porc;
-        meuGrafico.update('none'); // Update sem animação pra não travar
+        meuGrafico.update('none'); 
     }
 }
 
@@ -204,13 +194,15 @@ document.getElementById('btn-adicionar').onclick = () => {
     const categoria = categoriaIn.value;
     if (!texto) return;
 
-    // Não pede a foto aqui! Cria em branco.
     habitos.push({ texto, categoria, feito: false, imagem: null });
     textoIn.value = '';
-    guardarNaNuvem(); // Sincroniza
+    
+    // A MÁGICA DA VELOCIDADE: Atualiza a tela ANTES de salvar na nuvem
+    atualizarHabitosVisuais(); 
+    salvarNaNuvem(); 
 };
 
-window.removerHabito = (i) => { habitos.splice(i, 1); guardarNaNuvem(); };
+window.removerHabito = (i) => { habitos.splice(i, 1); atualizarHabitosVisuais(); salvarNaNuvem(); };
 
 function atualizarXPVisual() {
     const levelBadge = document.getElementById('user-level');
@@ -226,11 +218,7 @@ function atualizarXPVisual() {
     currentXPvisor.innerText = xpNoLevel;
 }
 
-function gerenciarXP(ganho) {
-    userXP = Math.max(0, userXP + ganho);
-    atualizarXPVisual();
-    // Não precisa salvar aqui, o SalvarNaNuvem já é chamado no toggleHabito
-}
+function gerenciarXP(ganho) { userXP = Math.max(0, userXP + ganho); atualizarXPVisual(); }
 
 window.filtrar = function (cat, btn) {
     filtroAtual = cat;
@@ -239,43 +227,23 @@ window.filtrar = function (cat, btn) {
     atualizarHabitosVisuais();
 }
 
-// Tema (Cores)
-window.mudarTema = function (cor) {
-    document.documentElement.style.setProperty('--accent', cor);
-    localStorage.setItem('temaSkyOS', cor);
-    temaSalvo = cor;
-    if (meuGrafico) {
-        meuGrafico.data.datasets[0].borderColor = cor;
-        meuGrafico.data.datasets[0].pointBorderColor = cor;
-        meuGrafico.update('none');
-    }
-}
-
-// Navegação Premium
 window.mudarAba = function (aba, elemento) {
     document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
-    
     document.getElementById(`aba-${aba}`).classList.add('active');
-    
-    // Se não for o botão central de ADD, marca como ativo
-    if(elemento && !elemento.classList.contains('circle-add-btn')) {
-        elemento.classList.add('active');
-    }
+    if(elemento && !elemento.classList.contains('circle-add-btn')) elemento.classList.add('active');
 }
 
-// Botão central de ADD leva pra aba Missões
 document.querySelector('.circle-add-btn').onclick = () => {
     mudarAba('habitos');
-    document.querySelectorAll('.nav-item')[1].classList.add('active'); // Marca Missões como ativo
+    document.querySelectorAll('.nav-item')[1].classList.add('active'); 
 }
 
 // ==========================================
-// 7. UTILITÁRIOS (Relógio PRO, APIs, Sons, Foco PRO)
+// 7. RELÓGIO, POMODORO E APIS
 // ==========================================
 function atualizarRelogioEData() {
     const agora = new Date();
-    // Formato premium: HH:MM:SS - dia, DD de mês
     const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const segs = agora.getSeconds().toString().padStart(2, '0');
     const dataFormatada = agora.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace('.', '');
@@ -286,9 +254,8 @@ function atualizarRelogioEData() {
     const dataAlvo = new Date('April 20, 2026 18:00:00').getTime();
     const diff = dataAlvo - agora.getTime();
     const countdownVisor = document.getElementById('countdown');
-    if (diff > 0 && countdownVisor) {
-        countdownVisor.innerText = `${Math.floor(diff / (1000 * 60 * 60 * 24))}d ${Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))}h`;
-    } else if(countdownVisor) { countdownVisor.innerText = "Inaugurado! 🎉"; }
+    if (diff > 0 && countdownVisor) countdownVisor.innerText = `${Math.floor(diff / (1000 * 60 * 60 * 24))}d ${Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))}h`;
+    else if(countdownVisor) countdownVisor.innerText = "Inaugurado! 🎉"; 
 }
 setInterval(atualizarRelogioEData, 1000);
 
@@ -308,12 +275,10 @@ async function carregarAPIs() {
     } catch (e) { }
 }
 
-// SONS PREMIUM (Player Simples Baseado na Ref)
 const audioLofi = document.getElementById('audio-lofi');
 const btnPlayLofiPrem = document.getElementById('btn-play-lofi-prem');
 const volumeLofiPrem = document.getElementById('lofi-volume-prem');
 const artLofi = document.querySelector('.album-art');
-
 let lofiTocando = false;
 
 if(btnPlayLofiPrem) {
@@ -334,30 +299,31 @@ if(btnPlayLofiPrem) {
     volumeLofiPrem.addEventListener('input', (e) => audioLofi.volume = e.target.value);
 }
 
-// FOCO POMODORO PREMIUM (CIRCULAR - IMAGEM 8)
 let timerInterval, segundosPomodoro = 1500;
 const circleProg = document.querySelector('.progress-ring__circle');
-const radius = circleProg.r.baseVal.value;
+const radius = circleProg ? circleProg.r.baseVal.value : 90;
 const circumference = 2 * Math.PI * radius;
 
-circleProg.style.strokeDasharray = `${circumference} ${circumference}`;
-circleProg.style.strokeDashoffset = circumference;
+if(circleProg) {
+    circleProg.style.strokeDasharray = `${circumference} ${circumference}`;
+    circleProg.style.strokeDashoffset = circumference;
+}
 
 function setProgress(percent) {
+    if(!circleProg) return;
     const offset = circumference - (percent / 100 * circumference);
     circleProg.style.strokeDashoffset = offset;
 }
 
 document.getElementById('timer-start').onclick = () => {
     if (timerInterval) return;
-    document.getElementById('timer-clock').style.color = temaSalvo; // Cyan da ref
+    document.getElementById('timer-clock').style.color = temaSalvo; 
     timerInterval = setInterval(() => {
         segundosPomodoro--;
         const mins = Math.floor(segundosPomodoro / 60);
         const segs = segundosPomodoro % 60;
         document.getElementById('timer-clock').innerText = `${mins}:${segs.toString().padStart(2, '0')}`;
         
-        // Atualiza anel de progresso (25min = 1500s)
         const porcConcluida = ((1500 - segundosPomodoro) / 1500) * 100;
         setProgress(porcConcluida);
 
@@ -380,25 +346,23 @@ function resetTimer() {
     timerInterval = null;
     segundosPomodoro = 1500;
     document.getElementById('timer-clock').innerText = "25:00";
-    document.getElementById('timer-clock').style.color = '#8c92a6'; // Volta cor dim
+    document.getElementById('timer-clock').style.color = '#8c92a6'; 
     setProgress(0);
 }
 
-// INICIALIZA O GRÁFICO (CHART.JS Premium)
 Chart.defaults.color = '#8c92a6';
 Chart.defaults.font.family = 'Inter';
 const ctx = document.getElementById('graficoProgresso');
 if(ctx) {
     const context = ctx.getContext('2d');
-    // Degradê do tema
     let gradient = context.createLinearGradient(0, 0, 0, 200);
-    gradient.addColorStop(0, 'rgba(0, 255, 136, 0.2)'); // Usando verde Lumeon
+    gradient.addColorStop(0, 'rgba(0, 255, 136, 0.2)'); 
     gradient.addColorStop(1, 'rgba(0, 255, 136, 0.0)');
 
     meuGrafico = new Chart(context, {
         type: 'line',
         data: {
-            labels: ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'], // Abreviado
+            labels: ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'], 
             datasets: [{
                 data: [40, 60, 50, 90, 70, 85, 0],
                 borderColor: temaSalvo, borderWidth: 3, tension: 0.4, fill: true, backgroundColor: gradient,
@@ -408,18 +372,13 @@ if(ctx) {
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: {
-                y: { beginAtZero: true, max: 100, display: false }, // Esconde eixo Y pra limpar visual
-                x: { grid: { display: false }, border: { display: false } }
-            },
+            scales: { y: { beginAtZero: true, max: 100, display: false }, x: { grid: { display: false }, border: { display: false } } },
             animation: { duration: 1000, easing: 'easeOutQuart' }
         }
     });
 }
 
-// START
 carregarAPIs();
 setProgress(0);
-// Para o icon pulsing do player carregar parado
 const pulse = document.querySelector('.pulsing-icon');
 if(pulse) pulse.style.animationPlayState = 'paused';
