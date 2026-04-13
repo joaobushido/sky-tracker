@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Tracker OS v8.0 - Premium UI</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+    <div class="skyos-background"></div>
+
+    <div id="login-screen" class="glass-login" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle at center, #1a1436 0%, #0d1117 100%);">
+        <div class="login-box glass-panel fade-in">
+            <h1 class="glow-text logo-text" style="font-size: 60px;">SKY<span style="color:white">OS</span></h1>
+            <p class="text-dim" style="margin-bottom: 50px;">O teu centro de comando. Acede para sincronizar.</p>
+            <button id="btn-login" class="btn-premium hover-lift" style="font-size: 18px;"><i class="fa-brands fa-google"></i> ENTRAR COM O GOOGLE</button>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-main" style="display: none;">
+        
+        <header class="main-header glass-panel fade-in">
+            <div class="profile-info">
+                <img src="https://cdn-icons-png.flaticon.com/512/3208/3208003.png" alt="Avatar João Paulo" class="avatar-header">
+                <div>
+                    <h2 class="welcome-text">Fala, <span class="glow-text">João Paulo!</span></h2>
+                    <p class="text-dim">Preparado para dominar o dia?</p>
+                </div>
+            </div>
+            <div class="xp-container">
+                <div class="xp-title">
+                    <p>NÍVEL <span id="user-level" class="level-badge glow-text">1</span></p>
+                    <small class="xp-text"><span id="current-xp">0</span> / 1000 XP</small>
+                </div>
+                <div class="xp-bar-bg"><div id="xp-bar-fill"></div></div>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+
+            <section id="aba-dashboard" class="aba active">
+                
+                <div class="daily-status-grid">
+                    <div class="card glass-panel status-card slide-up">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-cloud-sun glow-text"></i> Vibe BH</h3>
+                        </div>
+                        <div class="minimal-clima">
+                            <div class="clima-circle" title="Temperatura"><span id="clima-bh">--°</span></div>
+                        </div>
+                    </div>
+                    <div class="card glass-panel status-card slide-up delay-1">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-fire glow-text"></i> Streak</h3>
+                        </div>
+                        <div class="streak-value">
+                            <h4><span id="txt-sequencia">1</span> <span class="text-dim">Dia(s)</span></h4>
+                        </div>
+                    </div>
+                    <div class="card glass-panel dopamine-card slide-up delay-2">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-bolt glow-text"></i> Dopamina</h3>
+                        </div>
+                        <div class="dopamine-progress">
+                            <span id="txt-porc" class="porc-text glow-text">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card glass-panel chart-premium slide-up delay-3">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-area glow-text"></i> Performance Semanal</h3>
+                    </div>
+                    <div style="position: relative; height: 180px; width: 100%; margin-top: 15px;">
+                        <canvas id="graficoProgresso"></canvas>
+                    </div>
+                </div>
+
+                <div class="quote-premium glass-panel slide-up delay-4">
+                    <i class="fa-solid fa-quote-left glow-text"></i>
+                    <p id="frase-dia">"A consistência é o verdadeiro superpoder."</p>
+                </div>
+
+            </section>
+
+            <section id="aba-habitos" class="aba">
+                <div class="header-flex">
+                    <h2 class="section-title">Missões do Dia</h2>
+                    <div class="filtros glass-panel">
+                        <button class="filter-btn active" onclick="filtrar('todos', this)">TODOS</button>
+                        <button class="filter-btn filter-saude" onclick="filtrar('Saúde', this)">SAÚDE</button>
+                        <button class="filter-btn filter-sky" onclick="filtrar('Sky Burger', this)">NEGÓCIO</button>
+                    </div>
+                </div>
+                
+                <div class="lista-habitos" id="lista-habitos"></div>
+
+                <div class="add-box-pro glass-panel slide-up">
+                    <input type="text" id="novo-habito-input" placeholder="Nova missão...">
+                    <select id="categoria-input">
+                        <option value="Saúde">💪 Saúde</option>
+                        <option value="Sky Burger">🍔 Sky Burger</option>
+                        <option value="Pessoal">🧘 Pessoal</option>
+                    </select>
+                    <button id="btn-adicionar" class="hover-lift"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </section>
+
+            <section id="aba-foco" class="aba">
+                <div class="lofi-player-premium glass-panel fade-in">
+                    <div class="lofi-header-top">
+                        <i class="fa-solid fa-headphones-simple glow-text pulsing-icon"></i>
+                        <span>O som que te move</span>
+                    </div>
+                    <div class="album-art-container">
+                        <img src="https://cdn.pixabay.com/photo/2021/11/03/17/37/lofi-6766412_1280.jpg" alt="Lofi Art" class="album-art circular">
+                    </div>
+                    <div class="player-info">
+                        <h2>Sinfonia de Foco</h2>
+                        <p class="text-dim">Rádio Oficial Lofi Girl (Zeno)</p>
+                    </div>
+                    <div class="lofi-controls-premium">
+                        <button id="btn-play-lofi-prem" class="play-btn-prem hover-lift"><i class="fa-solid fa-play"></i></button>
+                    </div>
+                    <div class="volume-container">
+                        <i class="fa-solid fa-volume-high text-dim"></i>
+                        <input type="range" id="lofi-volume-prem" min="0" max="1" step="0.1" value="0.3">
+                    </div>
+                    <audio id="audio-lofi" src="https://stream.zeno.fm/f3wvbbqmdg8uv" preload="none"></audio>
+                </div>
+            </section>
+
+            <section id="aba-perfis" class="aba">
+                <div class="pomodoro-premium-container glass-panel fade-in">
+                    <h2 class="section-title text-center">Hora de Focar</h2>
+                    <div class="pomodoro-display">
+                        <svg class="progress-ring" width="200" height="200">
+                            <circle class="progress-ring__circle_bg" stroke="rgba(255,255,255,0.05)" stroke-width="10" fill="transparent" r="90" cx="100" cy="100"/>
+                            <circle class="progress-ring__circle" stroke="#00ff88" stroke-width="10" fill="transparent" r="90" cx="100" cy="100"/>
+                        </svg>
+                        <div id="timer-clock" class="glow-text clock-text">25:00</div>
+                    </div>
+                    <div class="timer-controls-premium">
+                        <button id="timer-start" class="btn-premium hover-lift"><i class="fa-solid fa-play"></i> INICIAR</button>
+                        <button id="timer-pause" class="btn-outline hover-lift"><i class="fa-solid fa-pause"></i> PAUSAR</button>
+                        <button id="timer-reset" class="btn-outline hover-lift"><i class="fa-solid fa-rotate-right"></i> RESET</button>
+                    </div>
+                </div>
+            </section>
+        </div> <nav class="bottom-nav glass-panel">
+            <div class="nav-item active" onclick="mudarAba('dashboard', this)">
+                <i class="fa-solid fa-house"></i>
+                <span>INÍCIO</span>
+            </div>
+            <div class="nav-item" onclick="mudarAba('habitos', this)">
+                <i class="fa-solid fa-bolt"></i>
+                <span>MISSÕES</span>
+            </div>
+            <div class="nav-item circle-add-btn">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+            <div class="nav-item" onclick="mudarAba('foco', this)">
+                <i class="fa-solid fa-music"></i>
+                <span>SONS</span>
+            </div>
+            <div class="nav-item" onclick="mudarAba('perfis', this)">
+                <i class="fa-solid fa-stopwatch"></i>
+                <span>FOCO</span>
+            </div>
+        </nav>
+
+        <div style="display:none">
+            <button onclick="gerarPDF()">PDF</button>
+            <button onclick="exportarBackup()">Backup</button>
+            <input type="file" id="import-backup" accept=".json">
+            <button id="btn-logout">Sair</button>
+        </div>
+    </div>
+
+    <input type="file" id="upload-prova" accept="image/*" style="display: none;">
+
+    <script src="app.js"></script>
+</body>
+</html>
