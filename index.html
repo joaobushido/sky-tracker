@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sky Tracker OS v8.0 - Premium UI</title>
+    <title>Sky Tracker OS v9.0 - Overdrive Edition</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -26,10 +26,10 @@
 <body>
     <div class="skyos-background"></div>
 
-    <div id="login-screen" class="glass-login" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle at center, #1a1436 0%, #0d1117 100%);">
+    <div id="login-screen" class="glass-login" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; display: flex; justify-content: center; align-items: center; background: var(--bg-color);">
         <div class="login-box glass-panel fade-in">
             <h1 class="glow-text logo-text" style="font-size: 60px;">SKY<span style="color:white">OS</span></h1>
-            <p class="text-dim" style="margin-bottom: 50px;">O seu centro de comando. Acesse para sincronizar.</p>
+            <p class="text-dim" style="margin-bottom: 50px;">O teu centro de comando. Acesse para sincronizar.</p>
             <button id="btn-login" class="btn-premium hover-lift" style="font-size: 18px;"><i class="fa-brands fa-google"></i> ENTRAR COM O GOOGLE</button>
         </div>
     </div>
@@ -60,15 +60,15 @@
                 <div class="daily-status-grid">
                     <div class="card glass-panel status-card slide-up">
                         <div class="card-header">
-                            <h3><i class="fa-solid fa-cloud-sun glow-text"></i> Vibe BH</h3>
+                            <h3><i class="fa-solid fa-cloud-sun glow-text-cyan"></i> Vibe BH</h3>
                         </div>
-                        <div class="minimal-clima">
+                        <div class="minimal-clima clima-cyan">
                             <div class="clima-circle" title="Temperatura"><span id="clima-bh">--°</span></div>
                         </div>
                     </div>
                     <div class="card glass-panel status-card slide-up delay-1">
                         <div class="card-header">
-                            <h3><i class="fa-solid fa-fire glow-text"></i> Streak</h3>
+                            <h3><i class="fa-solid fa-fire glow-text-purple"></i> Streak</h3>
                         </div>
                         <div class="streak-value">
                             <h4><span id="txt-sequencia">1</span> <span class="text-dim">Dia(s)</span></h4>
@@ -86,16 +86,16 @@
 
                 <div class="card glass-panel chart-premium slide-up delay-3">
                     <div class="card-header">
-                        <h3><i class="fa-solid fa-chart-area glow-text"></i> Performance Semanal</h3>
+                        <h3><i class="fa-solid fa-chart-area glow-text-cyan"></i> Performance Semanal</h3>
                     </div>
                     <div style="position: relative; height: 180px; width: 100%; margin-top: 15px;">
                         <canvas id="graficoProgresso"></canvas>
                     </div>
                 </div>
 
-                <div class="quote-premium glass-panel slide-up delay-4">
-                    <i class="fa-solid fa-quote-left glow-text"></i>
-                    <p id="frase-dia">"A consistência é o verdadeiro superpoder."</p>
+                <div class="card glass-panel notes-section slide-up delay-4">
+                    <h3><i class="fa-solid fa-lightbulb" style="color:#ffaa00"></i> Base de Conhecimento (Nuvem)</h3>
+                    <textarea id="quick-notes" placeholder="Ideias de receitas, fornecedores, estratégias..."></textarea>
                 </div>
 
             </section>
@@ -123,45 +123,64 @@
                 </div>
             </section>
 
-            <section id="aba-foco" class="aba">
+            <section id="aba-ia" class="aba">
                 <div class="lofi-player-premium glass-panel fade-in">
                     <div class="lofi-header-top">
-                        <i class="fa-solid fa-headphones-simple glow-text pulsing-icon"></i>
-                        <span>O som que te move</span>
+                        <i class="fa-solid fa-brain glow-text-cyan pulsing-icon"></i>
+                        <span>Sky AI: Ativada</span>
                     </div>
                     <div class="album-art-container">
-                        <img src="https://cdn.pixabay.com/photo/2021/11/03/17/37/lofi-6766412_1280.jpg" alt="Lofi Art" class="album-art circular">
+                        <div class="album-art circular ai-vortex">
+                            <i class="fa-solid fa-microphone-lines glow-text-cyan" style="font-size: 50px;"></i>
+                        </div>
                     </div>
                     <div class="player-info">
-                        <h2>Sinfonia de Foco</h2>
-                        <p class="text-dim">Rádio Oficial Lofi Girl (Zeno)</p>
+                        <h2>Em que posso ajudar?</h2>
+                        <p class="text-dim">Mande um comando de voz ou texto.</p>
                     </div>
-                    <div class="lofi-controls-premium">
-                        <button id="btn-play-lofi-prem" class="play-btn-prem hover-lift"><i class="fa-solid fa-play"></i></button>
+                    
+                    <div class="ai-waveform glass-panel">
+                        <div class="wave wave-cyan"></div>
+                        <div class="wave wave-purple"></div>
+                        <div class="wave wave-cyan"></div>
                     </div>
-                    <div class="volume-container">
-                        <i class="fa-solid fa-volume-high text-dim"></i>
-                        <input type="range" id="lofi-volume-prem" min="0" max="1" step="0.1" value="0.3">
-                    </div>
-                    <audio id="audio-lofi" src="https://stream.zeno.fm/f3wvbbqmdg8uv" preload="none"></audio>
                 </div>
             </section>
 
-            <section id="aba-perfis" class="aba">
-                <div class="pomodoro-premium-container glass-panel fade-in">
-                    <h2 class="section-title text-center">Hora de Focar</h2>
-                    <div class="pomodoro-display">
-                        <svg class="progress-ring" width="200" height="200">
-                            <circle class="progress-ring__circle_bg" stroke="rgba(255,255,255,0.05)" stroke-width="10" fill="transparent" r="90" cx="100" cy="100"/>
-                            <circle class="progress-ring__circle" stroke="#00ff88" stroke-width="10" fill="transparent" r="90" cx="100" cy="100"/>
-                        </svg>
-                        <div id="timer-clock" class="glow-text clock-text">25:00</div>
+            <section id="aba-financas" class="aba">
+                <div class="header-flex fade-in">
+                    <h2 class="section-title">Finanças Sky Burger</h2>
+                </div>
+
+                <div class="card glass-panel finance-card fade-in">
+                    <p class="text-dim">Saldo Total</p>
+                    <h2 id="saldo-total" class="glow-text-cyan fin-saldo">R$ 0,00</h2>
+                </div>
+
+                <div class="daily-status-grid fade-in delay-1" style="margin-top: 20px;">
+                    <div class="card glass-panel fin-stat-card fin-receita slide-up">
+                        <p class="fin-label">Receitas</p>
+                        <h4 id="fin-total-receita" class="fin-valor-premium">+R$ 0,00</h4>
                     </div>
-                    <div class="timer-controls-premium">
-                        <button id="timer-start" class="btn-premium hover-lift"><i class="fa-solid fa-play"></i> INICIAR</button>
-                        <button id="timer-pause" class="btn-outline hover-lift"><i class="fa-solid fa-pause"></i> PAUSAR</button>
-                        <button id="timer-reset" class="btn-outline hover-lift"><i class="fa-solid fa-rotate-right"></i> RESET</button>
+                    <div class="card glass-panel fin-stat-card fin-despesa slide-up delay-1">
+                        <p class="fin-label">Despesas</p>
+                        <h4 id="fin-total-despesa" class="fin-valor-premium">-R$ 0,00</h4>
                     </div>
+                </div>
+
+                <div class="card glass-panel slide-up delay-2" style="margin-top: 20px; padding: 15px;">
+                    <h3><i class="fa-solid fa-list-ul glow-text-cyan"></i> Transações</h3>
+                    <div class="lista-financeiro" id="lista-financeiro"></div>
+                </div>
+
+                <div class="add-box-pro glass-panel slide-up delay-3" style="margin-top: 20px;">
+                    <input type="text" id="fin-desc" placeholder="Ex: Venda combos, Fornecedor carne...">
+                    <input type="number" id="fin-valor" placeholder="R$ 0.00" step="0.01">
+                    <select id="fin-tipo">
+                        <option value="entrada" style="color: #00ff88;">+ Receita (Venda)</option>
+                        <option value="saida" style="color: #ff4d4d;">- Despesa (Custo)</option>
+                    </select>
+                    <button id="btn-add-fin" class="hover-lift"><i class="fa-solid fa-plus"></i></button>
                 </div>
             </section>
         </div> <nav class="bottom-nav glass-panel">
@@ -176,13 +195,13 @@
             <div class="nav-item circle-add-btn">
                 <i class="fa-solid fa-plus"></i>
             </div>
-            <div class="nav-item" onclick="mudarAba('foco', this)">
-                <i class="fa-solid fa-music"></i>
-                <span>SONS</span>
+            <div class="nav-item" onclick="mudarAba('ia', this)">
+                <i class="fa-solid fa-brain"></i>
+                <span>ASSISTENTE</span>
             </div>
-            <div class="nav-item" onclick="mudarAba('perfis', this)">
-                <i class="fa-solid fa-stopwatch"></i>
-                <span>FOCO</span>
+            <div class="nav-item" onclick="mudarAba('financas', this)">
+                <i class="fa-solid fa-wallet"></i>
+                <span>FINANÇAS</span>
             </div>
         </nav>
 
