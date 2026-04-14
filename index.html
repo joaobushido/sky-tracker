@@ -3,18 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>App Produtividade Premium</title>
+    <title>SkyOS - Produtividade</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a0a">
 </head>
 <body>
+
+    <div id="toast-xp" class="toast-xp">+50 XP</div>
 
     <div id="login-screen" class="login-container">
         <div class="login-box">
@@ -32,26 +38,22 @@
                 <header class="top-header">
                     <div class="week-selector">
                         <div class="day">
-                            <span class="day-name">SEG</span>
-                            <span class="day-num">9</span>
-                            <span class="day-score">11/11</span>
+                            <span class="day-name">SEG</span><span class="day-num">9</span>
                         </div>
                         <div class="day active">
-                            <span class="day-name text-gold">TER</span>
-                            <span class="day-num text-gold">10</span>
-                            <span class="day-score text-gold">8/10</span>
+                            <span class="day-name text-gold">TER</span><span class="day-num text-gold" id="dia-hoje">10</span>
+                            <span class="day-score text-gold" id="habitos-score">0/0</span>
                         </div>
                     </div>
                 </header>
 
-                <div class="lista-habitos-container" id="lista-habitos">
-                    </div>
-
                 <div class="add-form-dark">
                     <input type="text" id="novo-habito-input" placeholder="Novo hábito...">
-                    <input type="text" id="categoria-input" placeholder="Categoria (Ex: Saúde, Trabalho)">
-                    <button id="btn-adicionar"><i class="fa-solid fa-plus"></i> Adicionar</button>
+                    <input type="text" id="categoria-habito" placeholder="Categoria (Ex: Saúde)">
+                    <button id="btn-add-habito"><i class="fa-solid fa-plus"></i> Adicionar</button>
                 </div>
+
+                <div class="lista-habitos-container" id="lista-habitos"></div>
 
                 <div class="chart-section">
                     <h3 class="section-subtitle">DESEMPENHO</h3>
@@ -63,60 +65,25 @@
 
             <section id="aba-tarefas" class="aba">
                 <header class="simple-header">
-                    <h2>TAREFAS</h2>
-                    <p class="text-dim" style="font-size: 11px;">Com prazo. Não contam no streak.</p>
-                    <button class="btn-icon-top"><i class="fa-solid fa-plus"></i></button>
+                    <div>
+                        <h2>TAREFAS</h2>
+                        <p class="text-dim" style="font-size: 11px;">Com prazo. Não contam no streak.</p>
+                    </div>
+                    <button class="btn-icon-top" onclick="abrirModal('modal-tarefa')"><i class="fa-solid fa-plus"></i></button>
                 </header>
                 
                 <div class="task-group">
-                    <h4 class="task-date">HOJE</h4>
-                    <div class="task-item">
-                        <div class="task-check"></div>
-                        <div class="task-info">
-                            <p>Novas estampas</p>
-                            <span class="task-tag text-red"><i class="fa-regular fa-clock"></i> Hoje</span>
-                        </div>
-                        <i class="fa-solid fa-ellipsis-vertical text-dim"></i>
-                    </div>
-                </div>
-                
-                <div class="task-group">
-                    <h4 class="task-date">11 MAR</h4>
-                    <div class="task-item">
-                        <div class="task-check"></div>
-                        <p class="task-info">Video Ad Mentzer e Jsus For.</p>
-                        <i class="fa-solid fa-ellipsis-vertical text-dim"></i>
-                    </div>
-                    <div class="task-item">
-                        <div class="task-check"></div>
-                        <p class="task-info">Custo só 37</p>
-                        <i class="fa-solid fa-ellipsis-vertical text-dim"></i>
-                    </div>
+                    <h4 class="task-date">PENDENTES</h4>
+                    <div id="lista-tarefas"></div>
                 </div>
             </section>
 
             <section id="aba-treinos" class="aba">
                 <header class="simple-header">
-                    <h2><i class="fa-solid fa-arrow-left"></i> Treino A1</h2>
-                    <button class="btn-icon-top"><i class="fa-solid fa-fire"></i></button>
+                    <h2>TREINOS</h2>
+                    <button class="btn-icon-top" onclick="abrirModal('modal-treino')"><i class="fa-solid fa-plus"></i></button>
                 </header>
-                
-                <div class="workout-card">
-                    <div class="workout-header">
-                        <div class="workout-title">
-                            <div class="exercise-icon"></div>
-                            <h3>Supino Inclinado Halter</h3>
-                        </div>
-                    </div>
-                    <table class="workout-table">
-                        <thead><tr><th>SÉRIE</th><th>KG</th><th>REPS</th></tr></thead>
-                        <tbody>
-                            <tr><td>1</td><td>16</td><td>15</td></tr>
-                            <tr><td>2</td><td>24</td><td>8</td></tr>
-                            <tr><td>3</td><td>30</td><td>6</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+                <div id="lista-treinos"></div>
             </section>
 
             <section id="aba-financas" class="aba">
@@ -128,37 +95,19 @@
                 </div>
                 
                 <div class="finances-actions">
-                    <button class="btn-fin-action"><i class="fa-solid fa-minus"></i> Gasto</button>
-                    <button class="btn-fin-action"><i class="fa-solid fa-plus"></i> Receita</button>
-                    <button class="btn-fin-action"><i class="fa-solid fa-bullseye"></i> Meta</button>
+                    <button class="btn-fin-action" onclick="abrirModal('modal-fin-gasto')"><i class="fa-solid fa-minus"></i> Gasto</button>
+                    <button class="btn-fin-action" onclick="abrirModal('modal-fin-receita')"><i class="fa-solid fa-plus"></i> Receita</button>
                 </div>
 
                 <div class="finances-section">
-                    <h3 class="section-subtitle">METAS FINANCEIRAS</h3>
-                    <div class="meta-fin-card">
-                        <img src="https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=100&q=80" alt="BMW" class="meta-img">
-                        <div class="meta-fin-info">
-                            <h4>BMW M3</h4>
-                            <p class="text-dim" style="font-size: 10px;">R$ 56.000,00 / R$ 400.000,00</p>
-                            <div class="progress-bar-thin"><div class="progress-fill-gold" style="width: 14%;"></div></div>
-                        </div>
-                        <div class="meta-fin-btns">
-                            <button class="text-green">+ Aportar</button>
-                            <button class="text-red">- Retirar</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="finances-section">
-                    <h3 class="section-subtitle"><i class="fa-solid fa-robot"></i> CHAT IA</h3>
+                    <h3 class="section-subtitle"><i class="fa-solid fa-robot"></i> CHAT IA (Assistente)</h3>
                     <div class="chat-ia-box">
                         <div class="chat-chips">
-                            <span class="chip">Resumo do mês</span>
-                            <span class="chip">Onde posso economizar?</span>
-                            <span class="chip">Registrar gasto de R$ 50 em Alimentação</span>
+                            <span class="chip" onclick="setIaText('Resumo do mês')">Resumo do mês</span>
+                            <span class="chip" onclick="setIaText('Onde posso economizar?')">Economizar?</span>
                         </div>
                         <div class="chat-input-row">
-                            <input type="text" id="ia-input" placeholder="Pergunte algo sobre suas finanças...">
+                            <input type="text" id="ia-input" placeholder="Pergunte algo...">
                             <button class="btn-send-ia" onclick="enviarIA()"><i class="fa-solid fa-arrow-up"></i></button>
                         </div>
                         <div id="ia-resposta" class="ia-resposta" style="display: none;"></div>
@@ -167,83 +116,122 @@
 
                 <div class="finances-section">
                     <h3 class="section-subtitle">MOVIMENTAÇÕES</h3>
-                    <p class="task-date" style="margin-top: 10px;">1 MAR</p>
-                    <div id="lista-financeiro" class="transactions-list">
-                        </div>
+                    <div id="lista-financeiro" class="transactions-list"></div>
                 </div>
             </section>
 
             <section id="aba-metas" class="aba">
                 <header class="simple-header">
-                    <h2>METAS</h2>
-                    <p class="text-dim" style="font-size: 11px;">Seu alvo, seu prazo, seu progresso.</p>
-                    <button class="btn-icon-top">+ Nova meta</button>
-                </header>
-                
-                <div class="tabs-sub">
-                    <button class="tab-sub active">ATIVAS</button>
-                    <button class="tab-sub">ARQUIVADAS</button>
-                </div>
-
-                <div class="metas-grid">
-                    <div class="meta-card-big">
-                        <div class="meta-img-bg" style="background-image: url('https://images.unsplash.com/photo-1580519542036-ed47c0ce31d7?auto=format&fit=crop&w=300&q=80');">
-                            <span class="meta-category">FINANCEIRA</span>
-                            <h3>50k R$</h3>
-                            <p><i class="fa-regular fa-calendar"></i> até 12 DEZ</p>
-                        </div>
-                        <div class="meta-card-bottom">
-                            <div class="progress-bar-thin"><div class="progress-fill-gold" style="width: 24%;"></div></div>
-                            <div class="meta-stats-row">
-                                <p><strong>R$ 12.000,00</strong> / <br>R$ 50.000,00</p>
-                                <p class="text-right">Faltam<br><strong>278 dias</strong></p>
-                            </div>
-                        </div>
+                    <div>
+                        <h2>METAS</h2>
+                        <p class="text-dim" style="font-size: 11px;">Seu alvo, seu prazo, seu progresso.</p>
                     </div>
-                </div>
+                    <button class="btn-icon-top" onclick="abrirModal('modal-meta')"><i class="fa-solid fa-plus"></i></button>
+                </header>
+                <div class="metas-grid" id="lista-metas"></div>
             </section>
 
             <section id="aba-perfil" class="aba">
-                <header class="simple-header">
-                    <h2>PERFIL</h2>
-                </header>
+                <header class="simple-header"><h2>PERFIL</h2></header>
                 <div class="profile-card">
                     <h3 id="user-display-name">Carregando...</h3>
                     <p class="text-dim" style="margin-bottom: 20px;">Conta sincronizada na nuvem</p>
-                    <button id="btn-logout" class="btn-dark text-red" style="width: 100%; padding: 15px;">Sair da Conta</button>
+                    
+                    <div class="xp-showcase">
+                        <h2>NÍVEL <span id="user-level" class="text-gold">1</span></h2>
+                        <p><span id="current-xp">0</span> / 1000 XP</p>
+                        <div class="progress-bar-thin" style="margin-top:10px;"><div id="xp-bar-fill" class="progress-fill-gold" style="width: 0%;"></div></div>
+                    </div>
+
+                    <button id="btn-logout" class="btn-dark text-red" style="width: 100%; padding: 15px; margin-top: 30px;">Sair da Conta</button>
                 </div>
             </section>
 
-        </div> <nav class="bottom-nav-ios">
+        </div>
+
+        <nav class="bottom-nav-ios">
             <div class="nav-item-ios active" onclick="mudarAba('habitos', this)">
-                <i class="fa-solid fa-house"></i>
-                <span>Hábitos</span>
+                <i class="fa-solid fa-house"></i><span>Hábitos</span>
             </div>
             <div class="nav-item-ios" onclick="mudarAba('tarefas', this)">
-                <i class="fa-solid fa-list-check"></i>
-                <span>Tarefas</span>
+                <i class="fa-solid fa-list-check"></i><span>Tarefas</span>
             </div>
             <div class="nav-item-ios" onclick="mudarAba('treinos', this)">
-                <i class="fa-solid fa-dumbbell"></i>
-                <span>Treinos</span>
+                <i class="fa-solid fa-dumbbell"></i><span>Treinos</span>
             </div>
             <div class="nav-item-ios" onclick="mudarAba('financas', this)">
-                <i class="fa-solid fa-wallet"></i>
-                <span>Finanças</span>
+                <i class="fa-solid fa-wallet"></i><span>Finanças</span>
             </div>
             <div class="nav-item-ios" onclick="mudarAba('metas', this)">
-                <i class="fa-solid fa-bullseye"></i>
-                <span>Metas</span>
+                <i class="fa-solid fa-bullseye"></i><span>Metas</span>
             </div>
             <div class="nav-item-ios" onclick="mudarAba('perfil', this)">
-                <i class="fa-regular fa-user"></i>
-                <span>Perfil</span>
+                <i class="fa-regular fa-user"></i><span>Perfil</span>
             </div>
         </nav>
-
     </div>
 
-    <input type="file" id="upload-prova" accept="image/*" capture="environment" style="display: none;">
+    <div id="modal-tarefa" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Nova Tarefa</h3>
+            <input type="text" id="inp-tarefa-nome" placeholder="Nome da tarefa">
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="fecharModal('modal-tarefa')">Cancelar</button>
+                <button class="btn-confirm" onclick="addTarefa()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-treino" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Novo Exercício</h3>
+            <input type="text" id="inp-treino-nome" placeholder="Ex: Supino Inclinado">
+            <input type="text" id="inp-treino-series" placeholder="Séries (Ex: 3)">
+            <input type="text" id="inp-treino-kg" placeholder="Carga KG">
+            <input type="text" id="inp-treino-reps" placeholder="Repetições">
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="fecharModal('modal-treino')">Cancelar</button>
+                <button class="btn-confirm" onclick="addTreino()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-fin-gasto" class="modal-overlay">
+        <div class="modal-box">
+            <h3 class="text-red">Novo Gasto</h3>
+            <input type="text" id="inp-gasto-desc" placeholder="Descrição (Ex: Ifood)">
+            <input type="number" id="inp-gasto-valor" placeholder="R$ 0,00" step="0.01">
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="fecharModal('modal-fin-gasto')">Cancelar</button>
+                <button class="btn-confirm" style="background:var(--red);" onclick="addFinanca('saida')">Descontar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-fin-receita" class="modal-overlay">
+        <div class="modal-box">
+            <h3 class="text-green">Nova Receita</h3>
+            <input type="text" id="inp-rec-desc" placeholder="Descrição (Ex: Pix Cliente)">
+            <input type="number" id="inp-rec-valor" placeholder="R$ 0,00" step="0.01">
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="fecharModal('modal-fin-receita')">Cancelar</button>
+                <button class="btn-confirm" style="background:var(--green);" onclick="addFinanca('entrada')">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-meta" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Nova Meta</h3>
+            <input type="text" id="inp-meta-nome" placeholder="O que você quer alcançar?">
+            <input type="number" id="inp-meta-alvo" placeholder="Valor Alvo (R$)">
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="fecharModal('modal-meta')">Cancelar</button>
+                <button class="btn-confirm" onclick="addMeta()">Criar</button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
