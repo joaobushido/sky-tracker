@@ -2,219 +2,248 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sky Tracker OS v9.0 - Overdrive Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Produtividade Premium</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0d1117">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
-    <div class="skyos-background"></div>
 
-    <div id="login-screen" class="glass-login" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; display: flex; justify-content: center; align-items: center; background: var(--bg-color);">
-        <div class="login-box glass-panel fade-in">
-            <h1 class="glow-text logo-text" style="font-size: 60px;">SKY<span style="color:white">OS</span></h1>
-            <p class="text-dim" style="margin-bottom: 50px;">O teu centro de comando. Acesse para sincronizar.</p>
-            <button id="btn-login" class="btn-premium hover-lift" style="font-size: 18px;"><i class="fa-brands fa-google"></i> ENTRAR COM O GOOGLE</button>
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <h1>DOMINE<br>SEU DIA</h1>
+            <p class="text-dim">Acesse para sincronizar sua evolução.</p>
+            <button id="btn-login" class="btn-auth"><i class="fa-brands fa-google"></i> Continuar com Google</button>
         </div>
     </div>
 
     <div class="app-container" id="app-main" style="display: none;">
         
-        <header class="main-header glass-panel fade-in">
-            <div class="profile-info">
-                <img src="https://cdn-icons-png.flaticon.com/512/3208/3208003.png" alt="Avatar João Paulo" class="avatar-header">
-                <div>
-                    <h2 class="welcome-text">Fala, <span class="glow-text">João Paulo!</span></h2>
-                    <p class="text-dim">Preparado para dominar o dia?</p>
-                </div>
-            </div>
-            <div class="xp-container">
-                <div class="xp-title">
-                    <p>NÍVEL <span id="user-level" class="level-badge glow-text">1</span></p>
-                    <small class="xp-text"><span id="current-xp">0</span> / 1000 XP</small>
-                </div>
-                <div class="xp-bar-bg"><div id="xp-bar-fill"></div></div>
-            </div>
-        </header>
-
         <div class="content-wrapper">
+            
+            <section id="aba-habitos" class="aba active">
+                <header class="top-header">
+                    <div class="week-selector">
+                        <div class="day">
+                            <span class="day-name">SEG</span>
+                            <span class="day-num">9</span>
+                            <span class="day-score">11/11</span>
+                        </div>
+                        <div class="day active">
+                            <span class="day-name text-gold">TER</span>
+                            <span class="day-num text-gold">10</span>
+                            <span class="day-score text-gold">8/10</span>
+                        </div>
+                    </div>
+                </header>
 
-            <section id="aba-dashboard" class="aba active">
-                
-                <div class="daily-status-grid">
-                    <div class="card glass-panel status-card slide-up">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-cloud-sun glow-text-cyan"></i> Vibe BH</h3>
-                        </div>
-                        <div class="minimal-clima clima-cyan">
-                            <div class="clima-circle" title="Temperatura"><span id="clima-bh">--°</span></div>
-                        </div>
+                <div class="lista-habitos-container" id="lista-habitos">
                     </div>
-                    <div class="card glass-panel status-card slide-up delay-1">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-fire glow-text-purple"></i> Streak</h3>
-                        </div>
-                        <div class="streak-value">
-                            <h4><span id="txt-sequencia">1</span> <span class="text-dim">Dia(s)</span></h4>
-                        </div>
-                    </div>
-                    <div class="card glass-panel dopamine-card slide-up delay-2">
-                        <div class="card-header">
-                            <h3><i class="fa-solid fa-bolt glow-text"></i> Dopamina</h3>
-                        </div>
-                        <div class="dopamine-progress">
-                            <span id="txt-porc" class="porc-text glow-text">0%</span>
-                        </div>
-                    </div>
+
+                <div class="add-form-dark">
+                    <input type="text" id="novo-habito-input" placeholder="Novo hábito...">
+                    <input type="text" id="categoria-input" placeholder="Categoria (Ex: Saúde, Trabalho)">
+                    <button id="btn-adicionar"><i class="fa-solid fa-plus"></i> Adicionar</button>
                 </div>
 
-                <div class="card glass-panel chart-premium slide-up delay-3">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-chart-area glow-text-cyan"></i> Performance Semanal</h3>
-                    </div>
-                    <div style="position: relative; height: 180px; width: 100%; margin-top: 15px;">
+                <div class="chart-section">
+                    <h3 class="section-subtitle">DESEMPENHO</h3>
+                    <div class="chart-wrapper">
                         <canvas id="graficoProgresso"></canvas>
                     </div>
                 </div>
-
-                <div class="card glass-panel notes-section slide-up delay-4">
-                    <h3><i class="fa-solid fa-lightbulb" style="color:#ffaa00"></i> Base de Conhecimento (Nuvem)</h3>
-                    <textarea id="quick-notes" placeholder="Ideias de receitas, fornecedores, estratégias..."></textarea>
-                </div>
-
             </section>
 
-            <section id="aba-habitos" class="aba">
-                <div class="header-flex">
-                    <h2 class="section-title">Missões do Dia</h2>
-                    <div class="filtros glass-panel">
-                        <button class="filter-btn active" onclick="filtrar('todos', this)">TODOS</button>
-                        <button class="filter-btn filter-saude" onclick="filtrar('Saúde', this)">SAÚDE</button>
-                        <button class="filter-btn filter-sky" onclick="filtrar('Sky Burger', this)">NEGÓCIO</button>
+            <section id="aba-tarefas" class="aba">
+                <header class="simple-header">
+                    <h2>TAREFAS</h2>
+                    <p class="text-dim" style="font-size: 11px;">Com prazo. Não contam no streak.</p>
+                    <button class="btn-icon-top"><i class="fa-solid fa-plus"></i></button>
+                </header>
+                
+                <div class="task-group">
+                    <h4 class="task-date">HOJE</h4>
+                    <div class="task-item">
+                        <div class="task-check"></div>
+                        <div class="task-info">
+                            <p>Novas estampas</p>
+                            <span class="task-tag text-red"><i class="fa-regular fa-clock"></i> Hoje</span>
+                        </div>
+                        <i class="fa-solid fa-ellipsis-vertical text-dim"></i>
                     </div>
                 </div>
                 
-                <div class="lista-habitos" id="lista-habitos"></div>
-
-                <div class="add-box-pro glass-panel slide-up">
-                    <input type="text" id="novo-habito-input" placeholder="Nova missão...">
-                    <select id="categoria-input">
-                        <option value="Saúde">💪 Saúde</option>
-                        <option value="Sky Burger">🍔 Sky Burger</option>
-                        <option value="Pessoal">🧘 Pessoal</option>
-                    </select>
-                    <button id="btn-adicionar" class="hover-lift"><i class="fa-solid fa-paper-plane"></i></button>
+                <div class="task-group">
+                    <h4 class="task-date">11 MAR</h4>
+                    <div class="task-item">
+                        <div class="task-check"></div>
+                        <p class="task-info">Video Ad Mentzer e Jsus For.</p>
+                        <i class="fa-solid fa-ellipsis-vertical text-dim"></i>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-check"></div>
+                        <p class="task-info">Custo só 37</p>
+                        <i class="fa-solid fa-ellipsis-vertical text-dim"></i>
+                    </div>
                 </div>
             </section>
 
-            <section id="aba-ia" class="aba">
-                <div class="lofi-player-premium glass-panel fade-in">
-                    <div class="lofi-header-top">
-                        <i class="fa-solid fa-brain glow-text-cyan pulsing-icon"></i>
-                        <span>Sky AI: Ativada</span>
-                    </div>
-                    <div class="album-art-container">
-                        <div class="album-art circular ai-vortex">
-                            <i class="fa-solid fa-microphone-lines glow-text-cyan" style="font-size: 50px;"></i>
+            <section id="aba-treinos" class="aba">
+                <header class="simple-header">
+                    <h2><i class="fa-solid fa-arrow-left"></i> Treino A1</h2>
+                    <button class="btn-icon-top"><i class="fa-solid fa-fire"></i></button>
+                </header>
+                
+                <div class="workout-card">
+                    <div class="workout-header">
+                        <div class="workout-title">
+                            <div class="exercise-icon"></div>
+                            <h3>Supino Inclinado Halter</h3>
                         </div>
                     </div>
-                    <div class="player-info">
-                        <h2>Em que posso ajudar?</h2>
-                        <p class="text-dim">Mande um comando de voz ou texto.</p>
-                    </div>
-                    
-                    <div class="ai-waveform glass-panel">
-                        <div class="wave wave-cyan"></div>
-                        <div class="wave wave-purple"></div>
-                        <div class="wave wave-cyan"></div>
-                    </div>
+                    <table class="workout-table">
+                        <thead><tr><th>SÉRIE</th><th>KG</th><th>REPS</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>16</td><td>15</td></tr>
+                            <tr><td>2</td><td>24</td><td>8</td></tr>
+                            <tr><td>3</td><td>30</td><td>6</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </section>
 
             <section id="aba-financas" class="aba">
-                <div class="header-flex fade-in">
-                    <h2 class="section-title">Finanças Sky Burger</h2>
-                </div>
-
-                <div class="card glass-panel finance-card fade-in">
-                    <p class="text-dim">Saldo Total</p>
-                    <h2 id="saldo-total" class="glow-text-cyan fin-saldo">R$ 0,00</h2>
-                </div>
-
-                <div class="daily-status-grid fade-in delay-1" style="margin-top: 20px;">
-                    <div class="card glass-panel fin-stat-card fin-receita slide-up">
-                        <p class="fin-label">Receitas</p>
-                        <h4 id="fin-total-receita" class="fin-valor-premium">+R$ 0,00</h4>
-                    </div>
-                    <div class="card glass-panel fin-stat-card fin-despesa slide-up delay-1">
-                        <p class="fin-label">Despesas</p>
-                        <h4 id="fin-total-despesa" class="fin-valor-premium">-R$ 0,00</h4>
+                <div class="finances-top">
+                    <div class="saldo-box">
+                        <p class="text-dim">Saldo livre</p>
+                        <h1 class="text-gold" id="saldo-total">R$ 0,00</h1>
                     </div>
                 </div>
-
-                <div class="card glass-panel slide-up delay-2" style="margin-top: 20px; padding: 15px;">
-                    <h3><i class="fa-solid fa-list-ul glow-text-cyan"></i> Transações</h3>
-                    <div class="lista-financeiro" id="lista-financeiro"></div>
+                
+                <div class="finances-actions">
+                    <button class="btn-fin-action"><i class="fa-solid fa-minus"></i> Gasto</button>
+                    <button class="btn-fin-action"><i class="fa-solid fa-plus"></i> Receita</button>
+                    <button class="btn-fin-action"><i class="fa-solid fa-bullseye"></i> Meta</button>
                 </div>
 
-                <div class="add-box-pro glass-panel slide-up delay-3" style="margin-top: 20px;">
-                    <input type="text" id="fin-desc" placeholder="Ex: Venda combos, Fornecedor carne...">
-                    <input type="number" id="fin-valor" placeholder="R$ 0.00" step="0.01">
-                    <select id="fin-tipo">
-                        <option value="entrada" style="color: #00ff88;">+ Receita (Venda)</option>
-                        <option value="saida" style="color: #ff4d4d;">- Despesa (Custo)</option>
-                    </select>
-                    <button id="btn-add-fin" class="hover-lift"><i class="fa-solid fa-plus"></i></button>
+                <div class="finances-section">
+                    <h3 class="section-subtitle">METAS FINANCEIRAS</h3>
+                    <div class="meta-fin-card">
+                        <img src="https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=100&q=80" alt="BMW" class="meta-img">
+                        <div class="meta-fin-info">
+                            <h4>BMW M3</h4>
+                            <p class="text-dim" style="font-size: 10px;">R$ 56.000,00 / R$ 400.000,00</p>
+                            <div class="progress-bar-thin"><div class="progress-fill-gold" style="width: 14%;"></div></div>
+                        </div>
+                        <div class="meta-fin-btns">
+                            <button class="text-green">+ Aportar</button>
+                            <button class="text-red">- Retirar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="finances-section">
+                    <h3 class="section-subtitle"><i class="fa-solid fa-robot"></i> CHAT IA</h3>
+                    <div class="chat-ia-box">
+                        <div class="chat-chips">
+                            <span class="chip">Resumo do mês</span>
+                            <span class="chip">Onde posso economizar?</span>
+                            <span class="chip">Registrar gasto de R$ 50 em Alimentação</span>
+                        </div>
+                        <div class="chat-input-row">
+                            <input type="text" id="ia-input" placeholder="Pergunte algo sobre suas finanças...">
+                            <button class="btn-send-ia" onclick="enviarIA()"><i class="fa-solid fa-arrow-up"></i></button>
+                        </div>
+                        <div id="ia-resposta" class="ia-resposta" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <div class="finances-section">
+                    <h3 class="section-subtitle">MOVIMENTAÇÕES</h3>
+                    <p class="task-date" style="margin-top: 10px;">1 MAR</p>
+                    <div id="lista-financeiro" class="transactions-list">
+                        </div>
                 </div>
             </section>
-        </div> <nav class="bottom-nav glass-panel">
-            <div class="nav-item active" onclick="mudarAba('dashboard', this)">
+
+            <section id="aba-metas" class="aba">
+                <header class="simple-header">
+                    <h2>METAS</h2>
+                    <p class="text-dim" style="font-size: 11px;">Seu alvo, seu prazo, seu progresso.</p>
+                    <button class="btn-icon-top">+ Nova meta</button>
+                </header>
+                
+                <div class="tabs-sub">
+                    <button class="tab-sub active">ATIVAS</button>
+                    <button class="tab-sub">ARQUIVADAS</button>
+                </div>
+
+                <div class="metas-grid">
+                    <div class="meta-card-big">
+                        <div class="meta-img-bg" style="background-image: url('https://images.unsplash.com/photo-1580519542036-ed47c0ce31d7?auto=format&fit=crop&w=300&q=80');">
+                            <span class="meta-category">FINANCEIRA</span>
+                            <h3>50k R$</h3>
+                            <p><i class="fa-regular fa-calendar"></i> até 12 DEZ</p>
+                        </div>
+                        <div class="meta-card-bottom">
+                            <div class="progress-bar-thin"><div class="progress-fill-gold" style="width: 24%;"></div></div>
+                            <div class="meta-stats-row">
+                                <p><strong>R$ 12.000,00</strong> / <br>R$ 50.000,00</p>
+                                <p class="text-right">Faltam<br><strong>278 dias</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="aba-perfil" class="aba">
+                <header class="simple-header">
+                    <h2>PERFIL</h2>
+                </header>
+                <div class="profile-card">
+                    <h3 id="user-display-name">Carregando...</h3>
+                    <p class="text-dim" style="margin-bottom: 20px;">Conta sincronizada na nuvem</p>
+                    <button id="btn-logout" class="btn-dark text-red" style="width: 100%; padding: 15px;">Sair da Conta</button>
+                </div>
+            </section>
+
+        </div> <nav class="bottom-nav-ios">
+            <div class="nav-item-ios active" onclick="mudarAba('habitos', this)">
                 <i class="fa-solid fa-house"></i>
-                <span>INÍCIO</span>
+                <span>Hábitos</span>
             </div>
-            <div class="nav-item" onclick="mudarAba('habitos', this)">
-                <i class="fa-solid fa-bolt"></i>
-                <span>MISSÕES</span>
+            <div class="nav-item-ios" onclick="mudarAba('tarefas', this)">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Tarefas</span>
             </div>
-            <div class="nav-item circle-add-btn">
-                <i class="fa-solid fa-plus"></i>
+            <div class="nav-item-ios" onclick="mudarAba('treinos', this)">
+                <i class="fa-solid fa-dumbbell"></i>
+                <span>Treinos</span>
             </div>
-            <div class="nav-item" onclick="mudarAba('ia', this)">
-                <i class="fa-solid fa-brain"></i>
-                <span>ASSISTENTE</span>
-            </div>
-            <div class="nav-item" onclick="mudarAba('financas', this)">
+            <div class="nav-item-ios" onclick="mudarAba('financas', this)">
                 <i class="fa-solid fa-wallet"></i>
-                <span>FINANÇAS</span>
+                <span>Finanças</span>
+            </div>
+            <div class="nav-item-ios" onclick="mudarAba('metas', this)">
+                <i class="fa-solid fa-bullseye"></i>
+                <span>Metas</span>
+            </div>
+            <div class="nav-item-ios" onclick="mudarAba('perfil', this)">
+                <i class="fa-regular fa-user"></i>
+                <span>Perfil</span>
             </div>
         </nav>
 
-        <div style="display:none">
-            <button onclick="gerarPDF()">PDF</button>
-            <button onclick="exportarBackup()">Backup</button>
-            <input type="file" id="import-backup" accept=".json">
-            <button id="btn-logout">Sair</button>
-        </div>
     </div>
 
     <input type="file" id="upload-prova" accept="image/*" capture="environment" style="display: none;">
-
     <script src="app.js"></script>
 </body>
 </html>
