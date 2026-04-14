@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURAÇÃO DO FIREBASE (COM SUAS CHAVES)
+// 1. CONFIGURAÇÃO FIREBASE (COM SUAS CHAVES)
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyAQfU4m4UAKmsq4QNdW__KPIIjNUT_HoI0",
@@ -18,16 +18,19 @@ const db = firebase.firestore();
 // 2. ESTADOS
 // ==========================================
 let currentUserUID = null;
+let userXP = 0;
 let habitos = [];
+let tarefas = [];
+let treinos = [];
 let financas = [];
+let metas = [];
 let meuGrafico;
 
 // ==========================================
-// 3. LOGIN & ROTEAMENTO
+// 3. LOGIN & SINCRONIZAÇÃO
 // ==========================================
 document.getElementById('btn-login').addEventListener('click', () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(e => alert("Erro: " + e.message));
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message));
 });
 
 document.getElementById('btn-logout').addEventListener('click', () => { auth.signOut(); });
@@ -38,6 +41,7 @@ auth.onAuthStateChanged(user => {
         document.getElementById('user-display-name').innerText = user.displayName || "Usuário";
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-main').style.display = 'flex';
+        document.getElementById('dia-hoje').innerText = new Date().getDate();
         carregarNuvem(); 
     } else {
         currentUserUID = null;
@@ -46,162 +50,290 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// ==========================================
-// 4. FIREBASE SYNC (O SEGREDO MULTI-USUÁRIO)
-// ==========================================
 function carregarNuvem() {
-    if (!currentUserUID) return;
-    // Ele busca o documento EXCLUSIVO de quem está logado
-    db.collection("users_v9").doc(currentUserUID).onSnapshot((doc) => {
+    db.collection("users_master").doc(currentUserUID).onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
+            userXP = data.userXP || 0;
             habitos = data.habitos || [];
+            tarefas = data.tarefas || [];
+            treinos = data.treinos || [];
             financas = data.financas || [];
-            renderizarHabitos();
-            renderizarFinancas();
+            metas = data.metas || [];
+            
+            renderizarTudo();
         } else {
-            salvarNuvem(); // Cria perfil vazio
+            salvarNuvem();
         }
     });
 }
 
 function salvarNuvem() {
     if (!currentUserUID) return;
-    db.collection("users_v9").doc(currentUserUID).set({
-        habitos, financas
+    db.collection("users_master").doc(currentUserUID).set({
+        userXP, habitos, tarefas, treinos, financas, metas
     }, { merge: true });
 }
 
+function renderizarTudo() {
+    renderHabitos();
+    renderTarefas();
+    renderTreinos();
+    renderFinancas();
+    renderMetas();
+    atualizarXPVisual();
+}
+
 // ==========================================
-// 5. NAVEGAÇÃO INFERIOR
+// 4. XP E NOTIFICAÇÃO (GAMIFICAÇÃO)
+// ==========================================
+function darXP(valor) {
+    userXP += valor;
+    salvarNuvem();
+    
+    // Mostra Toast na tela
+    const toast = document.getElementById('toast-xp');
+    toast.innerText = `+${valor} XP!`;
+    toast.classList.add('show');
+    confetti({ particleCount: 30, spread: 50, origin: { y: 0.1 }, colors: ['#f5c518'] });
+    
+    setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function atualizarXPVisual() {
+    const lvl = Math.floor(userXP / 1000) + 1;
+    const rest = userXP % 1000;
+    document.getElementById('user-level').innerText = lvl;
+    document.getElementById('current-xp').innerText = rest;
+    document.getElementById('xp-bar-fill').style.width = (rest / 10) + "%";
+}
+
+// ==========================================
+// 5. NAVEGAÇÃO E MODAIS
 // ==========================================
 window.mudarAba = function(abaId, elemento) {
     document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
     document.querySelectorAll('.nav-item-ios').forEach(n => n.classList.remove('active'));
-    
     document.getElementById(`aba-${abaId}`).classList.add('active');
     if(elemento) elemento.classList.add('active');
 }
 
+window.abrirModal = (id) => document.getElementById(id).classList.add('active');
+window.fecharModal = (id) => document.getElementById(id).classList.remove('active');
+
 // ==========================================
-// 6. ABA HÁBITOS (Totalmente dinâmica para os amigos)
+// 6. LÓGICA DE CADA ABA
 // ==========================================
-function renderizarHabitos() {
+
+/* --- HÁBITOS --- */
+document.getElementById('btn-add-habito').onclick = () => {
+    const nome = document.getElementById('novo-habito-input').value;
+    const cat = document.getElementById('categoria-habito').value || 'Geral';
+    if(!nome) return;
+    habitos.push({ texto: nome, categoria: cat, feito: false });
+    document.getElementById('novo-habito-input').value = '';
+    salvarNuvem();
+};
+
+window.toggleHabito = (i) => {
+    habitos[i].feito = !habitos[i].feito;
+    if(habitos[i].feito) darXP(50);
+    else { userXP -= 50; salvarNuvem(); }
+};
+
+window.removerHabito = (i) => { habitos.splice(i, 1); salvarNuvem(); };
+
+function renderHabitos() {
     const lista = document.getElementById('lista-habitos');
     lista.innerHTML = '';
     let feitos = 0;
 
     habitos.forEach((h, i) => {
         if(h.feito) feitos++;
-        const item = document.createElement('div');
-        item.className = 'habito-item';
-        item.innerHTML = `
-            <div class="habito-check ${h.feito ? 'checked' : ''}" onclick="toggleHabito(${i})"></div>
-            <div class="habito-info">
-                <p class="habito-title ${h.feito ? 'done' : ''}">${h.texto}</p>
-                <p class="habito-cat">${h.categoria}</p>
+        lista.innerHTML += `
+            <div class="habito-item">
+                <div class="habito-check ${h.feito ? 'checked' : ''}" onclick="toggleHabito(${i})"></div>
+                <div class="habito-info">
+                    <p class="habito-title ${h.feito ? 'done' : ''}">${h.texto}</p>
+                    <p class="habito-cat">${h.categoria}</p>
+                </div>
+                <i class="fa-solid fa-trash text-dim" onclick="removerHabito(${i})"></i>
             </div>
-            <i class="fa-solid fa-trash text-dim" style="cursor:pointer;" onclick="removerHabito(${i})"></i>
         `;
-        lista.appendChild(div); // Oops, appendChild(item);
     });
 
-    // Atualizar Gráfico com percentual
-    const porc = habitos.length ? (feitos / habitos.length) * 100 : 0;
+    document.getElementById('habitos-score').innerText = `${feitos}/${habitos.length}`;
+    
+    // Gráfico
+    if(!meuGrafico && document.getElementById('graficoProgresso')) {
+        Chart.defaults.color = '#7a7a7a'; Chart.defaults.font.family = 'Inter';
+        meuGrafico = new Chart(document.getElementById('graficoProgresso').getContext('2d'), {
+            type: 'line',
+            data: { labels: ['S','T','Q','Q','S','S','H'], datasets: [{ data: [0,0,0,0,0,0,0], borderColor: '#f5c518', tension: 0.4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { display: false, max: 100 } } }
+        });
+    }
     if(meuGrafico) {
-        meuGrafico.data.datasets[0].data[6] = porc; // Atualiza o dia de hoje
+        meuGrafico.data.datasets[0].data[6] = habitos.length ? (feitos/habitos.length)*100 : 0;
         meuGrafico.update('none');
     }
 }
 
-window.toggleHabito = (i) => {
-    habitos[i].feito = !habitos[i].feito;
+/* --- TAREFAS --- */
+window.addTarefa = () => {
+    const nome = document.getElementById('inp-tarefa-nome').value;
+    if(!nome) return;
+    tarefas.push({ nome, feito: false });
+    document.getElementById('inp-tarefa-nome').value = '';
+    fecharModal('modal-tarefa');
     salvarNuvem();
 };
+window.toggleTarefa = (i) => { tarefas[i].feito = !tarefas[i].feito; if(tarefas[i].feito) darXP(30); else { userXP-=30; salvarNuvem(); }};
+window.removerTarefa = (i) => { tarefas.splice(i,1); salvarNuvem(); };
 
-window.removerHabito = (i) => {
-    habitos.splice(i, 1);
-    salvarNuvem();
+function renderTarefas() {
+    const lista = document.getElementById('lista-tarefas');
+    lista.innerHTML = '';
+    tarefas.forEach((t, i) => {
+        lista.innerHTML += `
+            <div class="task-item">
+                <div class="task-check ${t.feito ? 'checked' : ''}" onclick="toggleTarefa(${i})"></div>
+                <div class="task-info ${t.feito ? 'done' : ''}"><p>${t.nome}</p></div>
+                <i class="fa-solid fa-trash text-dim" onclick="removerTarefa(${i})"></i>
+            </div>
+        `;
+    });
 }
 
-document.getElementById('btn-adicionar').onclick = () => {
-    const txt = document.getElementById('novo-habito-input').value;
-    const cat = document.getElementById('categoria-input').value || 'Geral';
-    if(!txt) return;
-
-    habitos.push({ texto: txt, categoria: cat, feito: false });
-    document.getElementById('novo-habito-input').value = '';
-    document.getElementById('categoria-input').value = '';
+/* --- TREINOS --- */
+window.addTreino = () => {
+    const nome = document.getElementById('inp-treino-nome').value;
+    const series = document.getElementById('inp-treino-series').value;
+    const kg = document.getElementById('inp-treino-kg').value;
+    const reps = document.getElementById('inp-treino-reps').value;
+    if(!nome) return;
+    treinos.push({ nome, series, kg, reps });
+    fecharModal('modal-treino');
     salvarNuvem();
 };
+window.removerTreino = (i) => { treinos.splice(i,1); salvarNuvem(); };
 
-// ==========================================
-// 7. ABA FINANÇAS E CHAT IA
-// ==========================================
-function renderizarFinancas() {
+function renderTreinos() {
+    const lista = document.getElementById('lista-treinos');
+    lista.innerHTML = '';
+    treinos.forEach((t, i) => {
+        lista.innerHTML += `
+            <div class="workout-card">
+                <div class="workout-header">
+                    <div class="workout-title"><h3>${t.nome}</h3></div>
+                    <i class="fa-solid fa-trash text-red" onclick="removerTreino(${i})"></i>
+                </div>
+                <table class="workout-table">
+                    <thead><tr><th>SÉRIE</th><th>KG</th><th>REPS</th></tr></thead>
+                    <tbody><tr><td>${t.series}</td><td>${t.kg}</td><td>${t.reps}</td></tr></tbody>
+                </table>
+            </div>
+        `;
+    });
+}
+
+/* --- FINANÇAS --- */
+const formataBRL = (v) => parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+window.addFinanca = (tipo) => {
+    const desc = tipo === 'saida' ? document.getElementById('inp-gasto-desc').value : document.getElementById('inp-rec-desc').value;
+    const valor = tipo === 'saida' ? document.getElementById('inp-gasto-valor').value : document.getElementById('inp-rec-valor').value;
+    if(!desc || !valor) return;
+    
+    financas.push({ desc, valor: parseFloat(valor), tipo, data: Date.now() });
+    fecharModal(`modal-fin-${tipo === 'saida' ? 'gasto' : 'receita'}`);
+    if(tipo==='entrada') darXP(10);
+    salvarNuvem();
+};
+window.removerFinanca = (i) => { financas.splice(i,1); salvarNuvem(); };
+
+function renderFinancas() {
     const lista = document.getElementById('lista-financeiro');
     lista.innerHTML = '';
     let saldo = 0;
 
-    // Usando dados fake só pra manter o design do print preenchido caso não tenha dados, 
-    // mas na vida real você usaria o array 'financas'.
-    const transacaoExemplo = document.createElement('div');
-    transacaoExemplo.className = 'transacao-item';
-    transacaoExemplo.innerHTML = `
-        <div class="transacao-left">
-            <div class="trans-icon"><i class="fa-solid fa-arrow-trend-down"></i></div>
-            <div class="trans-info">
-                <p>Pix para namorada</p>
-                <small>Outros</small>
+    financas.sort((a,b)=>b.data-a.data).forEach((f, i) => {
+        saldo += f.tipo === 'entrada' ? f.valor : -f.valor;
+        const ehVerde = f.tipo === 'entrada';
+        lista.innerHTML += `
+            <div class="transacao-item">
+                <div class="transacao-left">
+                    <div class="trans-icon ${ehVerde ? 'green' : 'red'}"><i class="fa-solid ${ehVerde ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i></div>
+                    <div class="trans-info"><p>${f.desc}</p><small>${new Date(f.data).toLocaleDateString()}</small></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="trans-valor" style="color:${ehVerde ? 'var(--green)' : 'var(--red)'}">${ehVerde?'+':'-'}${formataBRL(f.valor)}</span>
+                    <i class="fa-solid fa-trash text-dim" onclick="removerFinanca(${i})"></i>
+                </div>
             </div>
-        </div>
-        <span class="trans-valor text-red">-R$ 60,00</span>
-    `;
-    lista.appendChild(transacaoExemplo);
+        `;
+    });
+    document.getElementById('saldo-total').innerText = formataBRL(saldo);
 }
 
-// Simulador da IA
-window.enviarIA = function() {
-    const input = document.getElementById('ia-input');
-    const respostaBox = document.getElementById('ia-resposta');
-    const btnIcon = document.querySelector('.btn-send-ia i');
-    
-    if(!input.value) return;
+/* --- METAS --- */
+window.addMeta = () => {
+    const nome = document.getElementById('inp-meta-nome').value;
+    const alvo = document.getElementById('inp-meta-alvo').value;
+    if(!nome || !alvo) return;
+    metas.push({ nome, alvo: parseFloat(alvo), atual: 0 });
+    fecharModal('modal-meta');
+    salvarNuvem();
+};
+window.addProgressoMeta = (i) => { metas[i].atual += 100; salvarNuvem(); darXP(20);}; // Botão rápido pra subir a meta localmente
+window.removerMeta = (i) => { metas.splice(i,1); salvarNuvem(); };
 
-    // Efeito de carregamento
-    btnIcon.className = "fa-solid fa-spinner fa-spin";
-    respostaBox.style.display = "block";
-    respostaBox.innerHTML = "<span class='text-dim'>Analisando dados...</span>";
-
-    // Resposta fake da IA baseada na pergunta
-    setTimeout(() => {
-        btnIcon.className = "fa-solid fa-arrow-up";
-        respostaBox.innerHTML = `<strong>Sky IA:</strong> Analisei seus registros. Baseado na sua solicitação "${input.value}", recomendo reduzir gastos em delivery este fim de semana para bater sua Meta do BMW M3 mais rápido.`;
-        input.value = '';
-    }, 1500);
-}
-
-// ==========================================
-// 8. INICIALIZAÇÃO GRÁFICO
-// ==========================================
-Chart.defaults.color = '#7a7a7a';
-Chart.defaults.font.family = 'Inter';
-const ctxChart = document.getElementById('graficoProgresso');
-if(ctxChart) {
-    meuGrafico = new Chart(ctxChart.getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'], 
-            datasets: [{
-                data: [20, 50, 30, 80, 60, 90, 0], // Valores aleatórios pro design
-                borderColor: '#00e676', borderWidth: 2, tension: 0.4, fill: false,
-                pointBackgroundColor: '#141414', pointBorderColor: '#00e676', pointBorderWidth: 2, pointRadius: 0
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { display: false, max: 100 }, x: { grid: { display: false }, border: { display: false } } }
-        }
+function renderMetas() {
+    const lista = document.getElementById('lista-metas');
+    lista.innerHTML = '';
+    metas.forEach((m, i) => {
+        const porc = Math.min((m.atual / m.alvo) * 100, 100);
+        lista.innerHTML += `
+            <div class="meta-card-big">
+                <div class="meta-img-bg" style="background:#222;">
+                    <span class="meta-category" style="display:flex; justify-content:space-between; width:100%;">OBJETIVO <i class="fa-solid fa-trash" onclick="removerMeta(${i})"></i></span>
+                    <h3>${m.nome}</h3>
+                </div>
+                <div class="meta-card-bottom">
+                    <div class="progress-bar-thin"><div class="progress-fill-gold" style="width: ${porc}%;"></div></div>
+                    <div class="meta-stats-row">
+                        <p><strong>${formataBRL(m.atual)}</strong> / <br>${formataBRL(m.alvo)}</p>
+                        <button style="background:none; border:none; color:var(--green); font-weight:bold;" onclick="addProgressoMeta(${i})">+ R$100</button>
+                    </div>
+                </div>
+            </div>
+        `;
     });
 }
+
+/* --- CHAT IA (SIMULADOR RESPONSIVO) --- */
+window.setIaText = (txt) => document.getElementById('ia-input').value = txt;
+
+window.enviarIA = () => {
+    const input = document.getElementById('ia-input');
+    const respBox = document.getElementById('ia-resposta');
+    const btn = document.querySelector('.btn-send-ia i');
+    const txt = input.value.toLowerCase();
+    
+    if(!txt) return;
+    btn.className = "fa-solid fa-spinner fa-spin";
+    respBox.style.display = "block";
+    respBox.innerHTML = "<span class='text-dim'>Processando...</span>";
+
+    setTimeout(() => {
+        btn.className = "fa-solid fa-arrow-up";
+        if(txt.includes('resumo') || txt.includes('mes')) {
+            respBox.innerHTML = `<strong>IA:</strong> Seu saldo atual é de ${document.getElementById('saldo-total').innerText}. Continue focando nas metas!`;
+        } else if(txt.includes('economizar')) {
+            respBox.innerHTML = `<strong>IA:</strong> Analisando seus hábitos, se você cortar 2 ifoods na semana, sobra R$200 pro BMW M3.`;
+        } else {
+            respBox.innerHTML = `<strong>IA:</strong> Entendido. Registrei sua solicitação sobre "${input.value}". Em que mais posso ajudar?`;
+        }
+        input.value = '';
+    }, 1200);
+};
