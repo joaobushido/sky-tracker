@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURAÇÃO DO FIREBASE
+// 1. CONFIGURAÇÃO DO FIREBASE (JÁ INSERIDO AS SUAS CHAVES)
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyAQfU4m4UAKmsq4QNdW__KPIIjNUT_HoI0",
@@ -10,23 +10,26 @@ const firebaseConfig = {
     appId: "1:767894844971:web:6800eafcf14f3b93dcdc6e"
 };
 
+// Inicializa o Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ==========================================
-// 2. VARIÁVEIS GLOBAIS
+// 2. VARIÁVEIS GLOBAIS E ESTADOS
 // ==========================================
 let currentUserUID = null;
 let userXP = 0;
 let habitos = [];
+let transacoes = []; // NOVO: Módulo Finanças
+let notas = "";
 let filtroAtual = 'todos';
 let meuGrafico;
-let temaSalvo = localStorage.getItem('temaSkyOS') || '#00ff88'; 
+let temaSalvo = localStorage.getItem('temaSkyOS') || '#00ff88'; // Lumeon Green por padrão
 document.documentElement.style.setProperty('--accent', temaSalvo);
 
 // ==========================================
-// 3. LOGIN / LOGOUT
+// 3. SISTEMA DE AUTENTICAÇÃO (LOGIN)
 // ==========================================
 document.getElementById('btn-login').addEventListener('click', () => {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -35,12 +38,13 @@ document.getElementById('btn-login').addEventListener('click', () => {
 
 document.getElementById('btn-logout').addEventListener('click', () => { auth.signOut(); });
 
+// Escuta o estado do login
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUserUID = user.uid;
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-main').style.display = 'flex';
-        carregarDadosDaNuvem(); 
+        carregarDadosDaNuvem(); // Puxa tudo do banco de dados!
     } else {
         currentUserUID = null;
         document.getElementById('login-screen').style.display = 'flex';
@@ -49,22 +53,30 @@ auth.onAuthStateChanged(user => {
 });
 
 // ==========================================
-// 4. FIREBASE (SALVAR/CARREGAR)
+// 4. BANCO DE DADOS (FIRESTORE) - SINCRONIZAÇÃO COMPLETA
 // ==========================================
 function carregarDadosDaNuvem() {
     if (!currentUserUID) return;
     const docRef = db.collection("usuarios").doc(currentUserUID);
 
+    // Ouve as alterações na nuvem em tempo real!
     docRef.onSnapshot((doc) => {
         if (doc.exists) {
             const dados = doc.data();
             habitos = dados.habitos || [];
             userXP = dados.userXP || 0;
+            transacoes = dados.transacoes || []; // Carrega finanças
+            notas = dados.notas || "";
+            
+            // Sincroniza visual
             const notesArea = document.getElementById('quick-notes');
-            if (notesArea) notesArea.value = dados.notas || "";
+            if (notesArea) notesArea.value = notas;
+            
             atualizarHabitosVisuais();
             atualizarXPVisual();
+            atualizarFinanceiroVisuais(); // NOVO
         } else {
+            // Se for a primeira vez, cria um perfil em branco na nuvem
             salvarNaNuvem();
         }
     });
@@ -73,32 +85,122 @@ function carregarDadosDaNuvem() {
 function salvarNaNuvem() {
     if (!currentUserUID) return;
     const notesArea = document.getElementById('quick-notes');
-    const notas = notesArea ? notesArea.value : "";
-    db.collection("usuarios").doc(currentUserUID).set({ habitos, userXP, notas }, { merge: true });
+    if (notesArea) notas = notesArea.value; // Pega nota atual se houver campo
+
+    db.collection("usuarios").doc(currentUserUID).set({
+        habitos,
+        userXP,
+        transacoes, // Salva finanças
+        notas
+    }, { merge: true });
 }
 
-const notesArea = document.getElementById('quick-notes');
-if (notesArea) notesArea.addEventListener('change', salvarNaNuvem);
+// Salva as notas na nuvem quando terminar de escrever
+const notesAreaInput = document.getElementById('quick-notes');
+if (notesAreaInput) {
+    notesAreaInput.addEventListener('change', () => {
+        salvarNaNuvem();
+    });
+}
 
 // ==========================================
-// 5. O SISTEMA DE FOTO (CORRIGIDO ANTI-BUG)
+// 5. MÓDULO FINANÇAS (PRINT 9)
+// ==========================================
+function formataBRL(valor) {
+    return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function atualizarFinanceiroVisuais() {
+    const lista = document.getElementById('lista-financeiro');
+    if (!lista) return;
+    lista.innerHTML = '';
+    
+    let totalReceita = 0;
+    let totalDespesa = 0;
+
+    // Sorteia transações da mais nova para a mais antiga
+    transacoes.sort((a,b) => b.data - a.data);
+
+    transacoes.forEach((t, i) => {
+        const valorVal = parseFloat(t.valor);
+        if (t.tipo === 'entrada') totalReceita += valorVal;
+        else totalDespesa += valorVal;
+
+        // Renderiza item na lista
+        const div = document.createElement('div');
+        div.className = 'fin-item glass-panel';
+        div.innerHTML = `
+            <div>
+                <p style="font-weight:600">${t.desc}</p>
+                <small class="text-dim">${new Date(t.data).toLocaleDateString('pt-BR')}</small>
+            </div>
+            <div class="fin-item-valor" style="color: ${t.tipo === 'entrada' ? '#00ff88' : '#ff4d4d'}">
+                ${t.tipo === 'entrada' ? '+' : '-'} ${formataBRL(valorVal)}
+            </div>
+            <button onclick="removerTransacao(${i})" class="btn-remove-habito">✖</button>
+        `;
+        lista.appendChild(div);
+    });
+
+    // Atualiza cards superiores
+    document.getElementById('fin-total-receita').innerText = '+' + formataBRL(totalReceita);
+    document.getElementById('fin-total-despesa').innerText = '-' + formataBRL(totalDespesa);
+    
+    // Saldo Total
+    const saldo = totalReceita - totalDespesa;
+    const saldoVisor = document.getElementById('saldo-total');
+    saldoVisor.innerText = formataBRL(saldo);
+    
+    // Muda cor do saldo
+    if (saldo >= 0) { saldoVisor.classList.remove('glow-text-purple'); saldoVisor.classList.add('glow-text-cyan'); }
+    else { saldoVisor.classList.remove('glow-text-cyan'); saldoVisor.classList.add('glow-text-purple'); }
+}
+
+document.getElementById('btn-add-fin').onclick = () => {
+    const descIn = document.getElementById('fin-desc');
+    const valorIn = document.getElementById('fin-valor');
+    const tipoIn = document.getElementById('fin-tipo');
+
+    if (!descIn.value || !valorIn.value) return;
+
+    // Cria transação
+    transacoes.push({
+        desc: descIn.value,
+        valor: valorIn.value,
+        tipo: tipoIn.value,
+        data: Date.now()
+    });
+
+    // Limpa inputs
+    descIn.value = '';
+    valorIn.value = '';
+
+    atualizarFinanceiroVisuais(); // Sincroniza visual local
+    salvarNaNuvem(); // Sincroniza nuvem
+};
+
+window.removerTransacao = (i) => { transacoes.splice(i, 1); atualizarFinanceiroVisuais(); salvarNaNuvem(); };
+
+// ==========================================
+// 6. MÓDULO HÁBITOS (PRINTS 3, 5) - ANTIBUG DA CÂMERA MANTIDO
 // ==========================================
 let indexTarefaPendenteProva = null; 
 
-// A Tática anti-travamento: usamos onclick com preventDefault ao invés de onchange
+// UX Inteligente: Impede a caixinha de marcar sozinha até que a foto seja salva
 window.iniciarProva = (i, event) => {
-    event.preventDefault(); // Impede a caixinha de marcar sozinha e desincronizar o site!
+    event.preventDefault(); // Impede o navegador de marcar a caixinha antes da foto!
 
     if (!habitos[i].feito) {
         indexTarefaPendenteProva = i;
+        // Ativa a CÂMERA do celular direto
         document.getElementById('upload-prova').click(); 
     } else {
-        // Se já estava feito e quer desmarcar
+        // Desmarcar tarefa
         habitos[i].feito = false;
         habitos[i].imagem = null; 
-        gerenciarXP(-150);
-        atualizarHabitosVisuais(); // Atualiza a tela primeiro
-        salvarNaNuvem(); // Depois manda pra nuvem
+        gerenciarXP(-150); // Perde XP se desmarcar!
+        atualizarHabitosVisuais(); // Atualiza local
+        salvarNaNuvem(); // Sincroniza nuvem
     }
 };
 
@@ -107,18 +209,19 @@ document.getElementById('upload-prova').addEventListener('change', function (e) 
     if (file && indexTarefaPendenteProva !== null) {
         const reader = new FileReader();
         reader.onload = function (evento) {
+            // Foto tirada com sucesso!
             habitos[indexTarefaPendenteProva].feito = true;
-            habitos[indexTarefaPendenteProva].imagem = evento.target.result; 
-            gerenciarXP(150); 
-            atualizarHabitosVisuais(); // Força a atualização da caixinha
-            salvarNaNuvem();
+            habitos[indexTarefaPendenteProva].imagem = evento.target.result; // Foto compactada Base64
+            gerenciarXP(150); // XP por prova enviada!
+            atualizarHabitosVisuais(); // Força a atualização da caixinha (agora sim)
+            salvarNaNuvem(); // Sincroniza nuvem
             indexTarefaPendenteProva = null;
             e.target.value = ''; 
             dispararConfetes();
         };
         reader.readAsDataURL(file); 
     } else {
-        // Se o usuário cancelar a foto
+        // Se cancelar a câmera
         indexTarefaPendenteProva = null;
         e.target.value = '';
     }
@@ -134,9 +237,6 @@ function dispararConfetes() {
     }());
 }
 
-// ==========================================
-// 6. RENDERIZAÇÃO E UX
-// ==========================================
 function obterClasseCategoria(categoria) {
     if (categoria === 'Saúde') return 'tag-saude';
     if (categoria === 'Sky Burger') return 'tag-sky';
@@ -157,7 +257,7 @@ function atualizarHabitosVisuais() {
         const div = document.createElement('div');
         div.className = `habito glass-panel slide-up ${obterClasseCategoria(h.categoria)}`;
         
-        let imgHtml = h.imagem ? `<img src="${h.imagem}" class="habito-img hover-lift" title="Prova de conclusão">` : '<div class="habito-img-placeholder text-dim">Sem prova</div>';
+        let imgHtml = h.imagem ? `<img src="${h.imagem}" class="habito-img hover-lift">` : '<div class="habito-img-placeholder text-dim">Sem prova</div>';
         
         // A mágica anti-bug está no onclick="iniciarProva(${i}, event)"
         div.innerHTML = `
@@ -196,14 +296,14 @@ document.getElementById('btn-adicionar').onclick = () => {
 
     habitos.push({ texto, categoria, feito: false, imagem: null });
     textoIn.value = '';
-    
-    // A MÁGICA DA VELOCIDADE: Atualiza a tela ANTES de salvar na nuvem
-    atualizarHabitosVisuais(); 
-    salvarNaNuvem(); 
+    atualizarHabitosVisuais(); salvarNaNuvem(); // Sincroniza local e nuvem
 };
 
 window.removerHabito = (i) => { habitos.splice(i, 1); atualizarHabitosVisuais(); salvarNaNuvem(); };
 
+// ==========================================
+// 7. UX, XP E UTILITÁRIOS (RELOGIO PRO, CLIMA BH, POMODORO CIRCULAR)
+// ==========================================
 function atualizarXPVisual() {
     const levelBadge = document.getElementById('user-level');
     const currentXPvisor = document.getElementById('current-xp');
@@ -239,11 +339,9 @@ document.querySelector('.circle-add-btn').onclick = () => {
     document.querySelectorAll('.nav-item')[1].classList.add('active'); 
 }
 
-// ==========================================
-// 7. RELÓGIO, POMODORO E APIS
-// ==========================================
 function atualizarRelogioEData() {
     const agora = new Date();
+    // Formato premium: HH:MM:SS - dia, DD de mês
     const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const segs = agora.getSeconds().toString().padStart(2, '0');
     const dataFormatada = agora.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace('.', '');
@@ -275,30 +373,7 @@ async function carregarAPIs() {
     } catch (e) { }
 }
 
-const audioLofi = document.getElementById('audio-lofi');
-const btnPlayLofiPrem = document.getElementById('btn-play-lofi-prem');
-const volumeLofiPrem = document.getElementById('lofi-volume-prem');
-const artLofi = document.querySelector('.album-art');
-let lofiTocando = false;
-
-if(btnPlayLofiPrem) {
-    btnPlayLofiPrem.addEventListener('click', () => {
-        if (lofiTocando) {
-            audioLofi.pause();
-            btnPlayLofiPrem.innerHTML = '<i class="fa-solid fa-play"></i>';
-            document.querySelector('.pulsing-icon').style.animationPlayState = 'paused';
-            artLofi.style.animationPlayState = 'paused';
-        } else {
-            audioLofi.play();
-            btnPlayLofiPrem.innerHTML = '<i class="fa-solid fa-pause"></i>';
-            document.querySelector('.pulsing-icon').style.animationPlayState = 'running';
-            artLofi.style.animationPlayState = 'running';
-        }
-        lofiTocando = !lofiTocando;
-    });
-    volumeLofiPrem.addEventListener('input', (e) => audioLofi.volume = e.target.value);
-}
-
+// POMODORO PREMIUM (CIRCULAR - PRINT 8) - Reativado na Aba Foco
 let timerInterval, segundosPomodoro = 1500;
 const circleProg = document.querySelector('.progress-ring__circle');
 const radius = circleProg ? circleProg.r.baseVal.value : 90;
@@ -350,11 +425,12 @@ function resetTimer() {
     setProgress(0);
 }
 
+// INICIALIZA O GRÁFICO (Performance Semanal Dinâmica)
 Chart.defaults.color = '#8c92a6';
 Chart.defaults.font.family = 'Inter';
-const ctx = document.getElementById('graficoProgresso');
-if(ctx) {
-    const context = ctx.getContext('2d');
+const ctxChart = document.getElementById('graficoProgresso');
+if(ctxChart) {
+    const context = ctxChart.getContext('2d');
     let gradient = context.createLinearGradient(0, 0, 0, 200);
     gradient.addColorStop(0, 'rgba(0, 255, 136, 0.2)'); 
     gradient.addColorStop(1, 'rgba(0, 255, 136, 0.0)');
@@ -364,7 +440,7 @@ if(ctx) {
         data: {
             labels: ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'], 
             datasets: [{
-                data: [40, 60, 50, 90, 70, 85, 0],
+                data: [40, 60, 50, 90, 70, 85, 0], // Inicia zerado hoje
                 borderColor: temaSalvo, borderWidth: 3, tension: 0.4, fill: true, backgroundColor: gradient,
                 pointBackgroundColor: '#0d1117', pointBorderColor: temaSalvo, pointBorderWidth: 2, pointRadius: 4
             }]
@@ -378,7 +454,8 @@ if(ctx) {
     });
 }
 
+// START
 carregarAPIs();
 setProgress(0);
-const pulse = document.querySelector('.pulsing-icon');
-if(pulse) pulse.style.animationPlayState = 'paused';
+const pulseIcon = document.querySelector('.pulsing-icon');
+if(pulseIcon) pulseIcon.style.animationPlayState = 'paused';
