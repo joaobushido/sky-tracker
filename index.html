@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SkyOS - Produtividade</title>
+    <title>SkyOS - Elite Tracker</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,17 +16,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0a0a0a">
+    <meta name="theme-color" content="#000000">
 </head>
 <body>
 
     <div id="toast-xp" class="toast-xp">+50 XP</div>
 
     <div id="login-screen" class="login-container">
-        <div class="login-box">
-            <h1>DOMINE<br>SEU DIA</h1>
-            <p class="text-dim">Acesse para sincronizar sua evolução.</p>
-            <button id="btn-login" class="btn-auth"><i class="fa-brands fa-google"></i> Continuar com Google</button>
+        <div class="login-box fade-in">
+            <div class="logo-icon"><i class="fa-solid fa-bolt"></i></div>
+            <h1>SKY<br>TRACKER</h1>
+            <p class="text-dim">A disciplina é o único atalho.</p>
+            <button id="btn-login" class="btn-auth click-pop"><i class="fa-brands fa-google"></i> Acessar Conta</button>
         </div>
     </div>
 
@@ -35,25 +36,34 @@
         <div class="content-wrapper">
             
             <section id="aba-habitos" class="aba active">
-                <header class="top-header">
-                    <div class="week-selector">
-                        <div class="day">
-                            <span class="day-name">SEG</span><span class="day-num">9</span>
-                        </div>
-                        <div class="day active">
-                            <span class="day-name text-gold">TER</span><span class="day-num text-gold" id="dia-hoje">10</span>
-                            <span class="day-score text-gold" id="habitos-score">0/0</span>
-                        </div>
+                <header class="header-quote">
+                    <p class="quote-text text-dim">"Hoje você vai se trair de novo?"</p>
+                    <div class="tabs-pill">
+                        <button class="tab-pill active">HOJE</button>
+                        <button class="tab-pill">SEMANA</button>
                     </div>
                 </header>
 
-                <div class="add-form-dark">
-                    <input type="text" id="novo-habito-input" placeholder="Novo hábito...">
-                    <input type="text" id="categoria-habito" placeholder="Categoria (Ex: Saúde)">
-                    <button id="btn-add-habito"><i class="fa-solid fa-plus"></i> Adicionar</button>
+                <div class="week-selector-pro">
+                    <div class="day">
+                        <span class="day-name">SEG</span><span class="day-num">9</span><span class="day-score">11/11</span>
+                    </div>
+                    <div class="day active">
+                        <span class="day-name text-gold">TER</span><span class="day-num text-gold" id="dia-hoje">10</span>
+                        <span class="day-score text-gold" id="habitos-score">0/0</span>
+                    </div>
                 </div>
 
-                <div class="lista-habitos-container" id="lista-habitos"></div>
+                <div class="section-top">
+                    <h2>Hábitos:</h2>
+                </div>
+
+                <div class="lista-habitos-container" id="lista-habitos">
+                    </div>
+
+                <div class="add-btn-container">
+                    <button class="btn-add-full click-pop" onclick="abrirModal('modal-habito')"><i class="fa-solid fa-plus"></i> Adicionar Hábito</button>
+                </div>
 
                 <div class="chart-section">
                     <h3 class="section-subtitle">DESEMPENHO</h3>
@@ -64,13 +74,10 @@
             </section>
 
             <section id="aba-tarefas" class="aba">
-                <header class="simple-header">
-                    <div>
-                        <h2>TAREFAS</h2>
-                        <p class="text-dim" style="font-size: 11px;">Com prazo. Não contam no streak.</p>
-                    </div>
-                    <button class="btn-icon-top" onclick="abrirModal('modal-tarefa')"><i class="fa-solid fa-plus"></i></button>
-                </header>
+                <div class="section-top">
+                    <h2>Tarefas:</h2>
+                    <button class="btn-icon-top click-pop" onclick="abrirModal('modal-tarefa')"><i class="fa-solid fa-plus"></i></button>
+                </div>
                 
                 <div class="task-group">
                     <h4 class="task-date">PENDENTES</h4>
@@ -79,36 +86,50 @@
             </section>
 
             <section id="aba-treinos" class="aba">
-                <header class="simple-header">
-                    <h2>TREINOS</h2>
-                    <button class="btn-icon-top" onclick="abrirModal('modal-treino')"><i class="fa-solid fa-plus"></i></button>
-                </header>
+                <div class="section-top">
+                    <h2>Treinos:</h2>
+                    <button class="btn-icon-top click-pop" onclick="abrirModal('modal-treino')"><i class="fa-solid fa-plus"></i></button>
+                </div>
                 <div id="lista-treinos"></div>
             </section>
 
             <section id="aba-financas" class="aba">
-                <div class="finances-top">
-                    <div class="saldo-box">
-                        <p class="text-dim">Saldo livre</p>
-                        <h1 class="text-gold" id="saldo-total">R$ 0,00</h1>
+                <div class="section-top">
+                    <h2>Finanças:</h2>
+                </div>
+
+                <div class="fin-summary-grid">
+                    <div class="fin-box">
+                        <small>ENTROU</small>
+                        <h3 class="text-green" id="fin-entrou">R$ 0,00</h3>
+                    </div>
+                    <div class="fin-box">
+                        <small>SAIU</small>
+                        <h3 class="text-red" id="fin-saiu">R$ 0,00</h3>
+                    </div>
+                    <div class="fin-box highlight">
+                        <small>SALDO LIVRE</small>
+                        <h3 class="text-gold" id="fin-saldo">R$ 0,00</h3>
                     </div>
                 </div>
+                <p class="fin-subtext text-center text-dim">Saldo total: R$ 0,00 • Reservado em metas: R$ 0,00</p>
                 
                 <div class="finances-actions">
-                    <button class="btn-fin-action" onclick="abrirModal('modal-fin-gasto')"><i class="fa-solid fa-minus"></i> Gasto</button>
-                    <button class="btn-fin-action" onclick="abrirModal('modal-fin-receita')"><i class="fa-solid fa-plus"></i> Receita</button>
+                    <button class="btn-pill click-pop" onclick="abrirModal('modal-fin-gasto')"><i class="fa-solid fa-minus"></i> Gasto</button>
+                    <button class="btn-pill click-pop" onclick="abrirModal('modal-fin-receita')"><i class="fa-solid fa-plus"></i> Receita</button>
+                    <button class="btn-pill click-pop" onclick="abrirModal('modal-meta')"><i class="fa-solid fa-bullseye"></i> Meta</button>
                 </div>
 
                 <div class="finances-section">
-                    <h3 class="section-subtitle"><i class="fa-solid fa-robot"></i> CHAT IA (Assistente)</h3>
+                    <h3 class="section-subtitle"><i class="fa-solid fa-sparkles text-gold"></i> IA FINANCEIRA</h3>
                     <div class="chat-ia-box">
                         <div class="chat-chips">
-                            <span class="chip" onclick="setIaText('Resumo do mês')">Resumo do mês</span>
-                            <span class="chip" onclick="setIaText('Onde posso economizar?')">Economizar?</span>
+                            <span class="chip click-pop" onclick="setIaText('Resumo do mês')">Resumo do mês</span>
+                            <span class="chip click-pop" onclick="setIaText('Gastei R$ 50 no almoço')">Gastei R$ 50 no almoço</span>
                         </div>
                         <div class="chat-input-row">
-                            <input type="text" id="ia-input" placeholder="Pergunte algo...">
-                            <button class="btn-send-ia" onclick="enviarIA()"><i class="fa-solid fa-arrow-up"></i></button>
+                            <input type="text" id="ia-input" placeholder="Pergunte ou registre algo...">
+                            <button class="btn-send-ia click-pop" onclick="enviarIA()"><i class="fa-solid fa-arrow-up"></i></button>
                         </div>
                         <div id="ia-resposta" class="ia-resposta" style="display: none;"></div>
                     </div>
@@ -121,21 +142,41 @@
             </section>
 
             <section id="aba-metas" class="aba">
-                <header class="simple-header">
-                    <div>
-                        <h2>METAS</h2>
-                        <p class="text-dim" style="font-size: 11px;">Seu alvo, seu prazo, seu progresso.</p>
-                    </div>
-                    <button class="btn-icon-top" onclick="abrirModal('modal-meta')"><i class="fa-solid fa-plus"></i></button>
-                </header>
+                <div class="section-top">
+                    <h2>Metas:</h2>
+                    <button class="btn-icon-top click-pop" onclick="abrirModal('modal-meta')"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                
+                <div class="tabs-sub">
+                    <button class="tab-sub active">ATIVAS</button>
+                    <button class="tab-sub">ARQUIVADAS</button>
+                </div>
+
                 <div class="metas-grid" id="lista-metas"></div>
             </section>
 
             <section id="aba-perfil" class="aba">
-                <header class="simple-header"><h2>PERFIL</h2></header>
-                <div class="profile-card">
+                <div class="section-top">
+                    <h2>Recompensas:</h2>
+                </div>
+                
+                <div class="reward-card">
+                    <div class="reward-header">
+                        <div class="reward-badge"><i class="fa-solid fa-certificate"></i></div>
+                        <div>
+                            <h3>ELITE</h3>
+                            <p class="text-dim" style="font-size: 11px;">Atingir 180 dias de Streak</p>
+                        </div>
+                        <span class="lock-status text-dim"><i class="fa-solid fa-lock"></i> BLOQUEADA</span>
+                    </div>
+                    <div class="reward-img-box">
+                        <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=300&q=80" alt="Camiseta">
+                    </div>
+                </div>
+
+                <div class="profile-card" style="margin-top: 20px;">
                     <h3 id="user-display-name">Carregando...</h3>
-                    <p class="text-dim" style="margin-bottom: 20px;">Conta sincronizada na nuvem</p>
+                    <p class="text-dim" style="margin-bottom: 20px;">Conta sincronizada</p>
                     
                     <div class="xp-showcase">
                         <h2>NÍVEL <span id="user-level" class="text-gold">1</span></h2>
@@ -143,7 +184,7 @@
                         <div class="progress-bar-thin" style="margin-top:10px;"><div id="xp-bar-fill" class="progress-fill-gold" style="width: 0%;"></div></div>
                     </div>
 
-                    <button id="btn-logout" class="btn-dark text-red" style="width: 100%; padding: 15px; margin-top: 30px;">Sair da Conta</button>
+                    <button id="btn-logout" class="btn-dark text-red click-pop" style="width: 100%; padding: 15px; margin-top: 30px; border-radius: 16px;">Sair da Conta</button>
                 </div>
             </section>
 
@@ -154,7 +195,7 @@
                 <i class="fa-solid fa-house"></i><span>Hábitos</span>
             </div>
             <div class="nav-item-ios" onclick="mudarAba('tarefas', this)">
-                <i class="fa-solid fa-list-check"></i><span>Tarefas</span>
+                <i class="fa-regular fa-square-check"></i><span>Tarefas</span>
             </div>
             <div class="nav-item-ios" onclick="mudarAba('treinos', this)">
                 <i class="fa-solid fa-dumbbell"></i><span>Treinos</span>
@@ -171,63 +212,77 @@
         </nav>
     </div>
 
+    <div id="modal-habito" class="modal-overlay">
+        <div class="modal-box slide-up">
+            <h3>Novo Hábito</h3>
+            <input type="text" id="inp-habito-nome" placeholder="Nome do hábito... (Ex: 💧 Água)">
+            <input type="text" id="inp-habito-cat" placeholder="Categoria (Ex: Saúde)">
+            <div class="modal-btns">
+                <button class="btn-cancel click-pop" onclick="fecharModal('modal-habito')">Cancelar</button>
+                <button class="btn-confirm click-pop" onclick="addHabito()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-tarefa" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box slide-up">
             <h3>Nova Tarefa</h3>
             <input type="text" id="inp-tarefa-nome" placeholder="Nome da tarefa">
             <div class="modal-btns">
-                <button class="btn-cancel" onclick="fecharModal('modal-tarefa')">Cancelar</button>
-                <button class="btn-confirm" onclick="addTarefa()">Salvar</button>
+                <button class="btn-cancel click-pop" onclick="fecharModal('modal-tarefa')">Cancelar</button>
+                <button class="btn-confirm click-pop" onclick="addTarefa()">Salvar</button>
             </div>
         </div>
     </div>
 
     <div id="modal-treino" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box slide-up">
             <h3>Novo Exercício</h3>
             <input type="text" id="inp-treino-nome" placeholder="Ex: Supino Inclinado">
-            <input type="text" id="inp-treino-series" placeholder="Séries (Ex: 3)">
-            <input type="text" id="inp-treino-kg" placeholder="Carga KG">
-            <input type="text" id="inp-treino-reps" placeholder="Repetições">
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <input type="number" id="inp-treino-series" placeholder="Séries">
+                <input type="number" id="inp-treino-kg" placeholder="KG">
+                <input type="number" id="inp-treino-reps" placeholder="Reps">
+            </div>
             <div class="modal-btns">
-                <button class="btn-cancel" onclick="fecharModal('modal-treino')">Cancelar</button>
-                <button class="btn-confirm" onclick="addTreino()">Salvar</button>
+                <button class="btn-cancel click-pop" onclick="fecharModal('modal-treino')">Cancelar</button>
+                <button class="btn-confirm click-pop" onclick="addTreino()">Salvar</button>
             </div>
         </div>
     </div>
 
     <div id="modal-fin-gasto" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box slide-up">
             <h3 class="text-red">Novo Gasto</h3>
-            <input type="text" id="inp-gasto-desc" placeholder="Descrição (Ex: Ifood)">
+            <input type="text" id="inp-gasto-desc" placeholder="Descrição (Ex: Uber)">
             <input type="number" id="inp-gasto-valor" placeholder="R$ 0,00" step="0.01">
             <div class="modal-btns">
-                <button class="btn-cancel" onclick="fecharModal('modal-fin-gasto')">Cancelar</button>
-                <button class="btn-confirm" style="background:var(--red);" onclick="addFinanca('saida')">Descontar</button>
+                <button class="btn-cancel click-pop" onclick="fecharModal('modal-fin-gasto')">Cancelar</button>
+                <button class="btn-confirm click-pop" style="background:var(--red);" onclick="addFinanca('saida')">Descontar</button>
             </div>
         </div>
     </div>
 
     <div id="modal-fin-receita" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box slide-up">
             <h3 class="text-green">Nova Receita</h3>
-            <input type="text" id="inp-rec-desc" placeholder="Descrição (Ex: Pix Cliente)">
+            <input type="text" id="inp-rec-desc" placeholder="Descrição (Ex: Venda)">
             <input type="number" id="inp-rec-valor" placeholder="R$ 0,00" step="0.01">
             <div class="modal-btns">
-                <button class="btn-cancel" onclick="fecharModal('modal-fin-receita')">Cancelar</button>
-                <button class="btn-confirm" style="background:var(--green);" onclick="addFinanca('entrada')">Adicionar</button>
+                <button class="btn-cancel click-pop" onclick="fecharModal('modal-fin-receita')">Cancelar</button>
+                <button class="btn-confirm click-pop" style="background:var(--green);" onclick="addFinanca('entrada')">Adicionar</button>
             </div>
         </div>
     </div>
 
     <div id="modal-meta" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box slide-up">
             <h3>Nova Meta</h3>
             <input type="text" id="inp-meta-nome" placeholder="O que você quer alcançar?">
             <input type="number" id="inp-meta-alvo" placeholder="Valor Alvo (R$)">
             <div class="modal-btns">
-                <button class="btn-cancel" onclick="fecharModal('modal-meta')">Cancelar</button>
-                <button class="btn-confirm" onclick="addMeta()">Criar</button>
+                <button class="btn-cancel click-pop" onclick="fecharModal('modal-meta')">Cancelar</button>
+                <button class="btn-confirm click-pop" onclick="addMeta()">Criar</button>
             </div>
         </div>
     </div>
